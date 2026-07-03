@@ -113,7 +113,7 @@ jobs:
           set -euo pipefail
 
           VERSION="${GITHUB_REF_NAME#v}"
-          PLATFORM_PKG="@phonic/cli-${{ matrix.npm-platform-suffix }}"
+          PLATFORM_PKG="@phonic-ai/cli-${{ matrix.npm-platform-suffix }}"
           PKG_DIR="npm-pkg/${PLATFORM_PKG}"
           mkdir -p "${PKG_DIR}"
 
@@ -194,15 +194,15 @@ jobs:
 
           # Build optionalDependencies map
           OPTIONAL_DEPS=""
-          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic/cli-linux-x64\": \"${VERSION}\","
-          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic/cli-linux-arm64\": \"${VERSION}\","
-          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic/cli-darwin-x64\": \"${VERSION}\","
-          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic/cli-darwin-arm64\": \"${VERSION}\","
-          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic/cli-win32-x64\": \"${VERSION}\""
+          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic-ai/cli-linux-x64\": \"${VERSION}\","
+          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic-ai/cli-linux-arm64\": \"${VERSION}\","
+          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic-ai/cli-darwin-x64\": \"${VERSION}\","
+          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic-ai/cli-darwin-arm64\": \"${VERSION}\","
+          OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@phonic-ai/cli-win32-x64\": \"${VERSION}\""
 
           cat > "${PKG_DIR}/package.json" <<PKGJSON
           {
-            "name": "@phonic/cli",
+            "name": "@phonic-ai/cli",
             "version": "${VERSION}",
             "description": "CLI for phonic",
             "repository": {
@@ -229,11 +229,11 @@ jobs:
           const os = require("os");
 
           const PLATFORMS = {
-            "linux-x64": "@phonic/cli-linux-x64",
-            "linux-arm64": "@phonic/cli-linux-arm64",
-            "darwin-x64": "@phonic/cli-darwin-x64",
-            "darwin-arm64": "@phonic/cli-darwin-arm64",
-            "win32-x64": "@phonic/cli-win32-x64",
+            "linux-x64": "@phonic-ai/cli-linux-x64",
+            "linux-arm64": "@phonic-ai/cli-linux-arm64",
+            "darwin-x64": "@phonic-ai/cli-darwin-x64",
+            "darwin-arm64": "@phonic-ai/cli-darwin-arm64",
+            "win32-x64": "@phonic-ai/cli-win32-x64",
           };
 
           const platformKey = os.platform() + "-" + os.arch();

@@ -1,6 +1,6 @@
 # Phonic CLI
 
-[![npm shield](https://img.shields.io/npm/v/@phonic/cli)](https://www.npmjs.com/package/@phonic/cli)
+[![npm shield](https://img.shields.io/npm/v/@phonic-ai/cli)](https://www.npmjs.com/package/@phonic-ai/cli)
 
 Command-line interface for the Phonic API.
 
@@ -34,13 +34,13 @@ powershell -ExecutionPolicy ByPass -c "irm https://github.com/Phonic-Co/phonic-c
 ### npm
 
 ```bash
-npm install -g @phonic/cli
+npm install -g @phonic-ai/cli
 ```
 
 Or run directly without installing:
 
 ```bash
-npx @phonic/cli --help
+npx @phonic-ai/cli --help
 ```
 
 ### Build from source
