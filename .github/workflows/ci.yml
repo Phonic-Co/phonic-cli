@@ -109,11 +109,6 @@ jobs:
 
       - name: Package and publish npm platform package
         shell: bash
-        env:
-          # One-time bootstrap: npm OIDC/trusted-publishing can't create a
-          # package's first version, so v1 publishes with a token. Reverts to
-          # OIDC on the next Fern regen (once the packages exist on npm).
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -188,10 +183,6 @@ jobs:
 
       - name: Publish launcher package
         shell: bash
-        env:
-          # One-time bootstrap (see platform-package step). Token auth for the
-          # initial publish; the next Fern regen restores OIDC.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
 
