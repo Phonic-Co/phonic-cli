@@ -104,7 +104,7 @@ pub struct ConfigOptions {
     /// Array of `{ word, pronunciation }` entries. Words must be unique.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pronunciation_dictionary: Option<Vec<ConfigOptionsPronunciationDictionaryItem>>,
-    /// Tools available to the assistant. Use a string to reference a pre-defined tool by name, or define an inline WebSocket tool for this conversation.
+    /// Tools available to the assistant. Use a string to reference a pre-defined tool by name, provide a built-in tool object to override its default configuration, or define an inline WebSocket tool for this conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<ToolDefinition>>,
     /// Template variables for system prompt and welcome message
@@ -136,6 +136,9 @@ pub struct ConfigOptions {
     /// When not `null`, the agent will call this endpoint to get configuration options for the conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_endpoint: Option<ConfigOptionsConfigurationEndpoint>,
+    /// Additional runtime parameters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_params: Option<HashMap<String, serde_json::Value>>,
     /// Policy controlling how long transcripts and audio recordings are retained before being deleted.
     /// When `zero_data_retention` is `true`, nothing is retained and `transcripts`/`audio_recordings` are omitted.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -192,6 +195,7 @@ pub struct ConfigOptionsBuilder {
     enable_assistant_backchannel: Option<bool>,
     assistant_backchannel_aggressiveness: Option<f64>,
     configuration_endpoint: Option<ConfigOptionsConfigurationEndpoint>,
+    additional_params: Option<HashMap<String, serde_json::Value>>,
     data_retention_policy: Option<ConfigOptionsDataRetentionPolicy>,
 }
 
@@ -401,6 +405,11 @@ impl ConfigOptionsBuilder {
         self
     }
 
+    pub fn additional_params(mut self, value: HashMap<String, serde_json::Value>) -> Self {
+        self.additional_params = Some(value);
+        self
+    }
+
     pub fn data_retention_policy(mut self, value: ConfigOptionsDataRetentionPolicy) -> Self {
         self.data_retention_policy = Some(value);
         self
@@ -450,6 +459,7 @@ impl ConfigOptionsBuilder {
             enable_assistant_backchannel: self.enable_assistant_backchannel,
             assistant_backchannel_aggressiveness: self.assistant_backchannel_aggressiveness,
             configuration_endpoint: self.configuration_endpoint,
+            additional_params: self.additional_params,
             data_retention_policy: self.data_retention_policy,
         })
     }

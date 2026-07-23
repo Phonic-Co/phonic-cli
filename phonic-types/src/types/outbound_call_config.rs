@@ -110,6 +110,9 @@ pub struct OutboundCallConfig {
     /// When not `null`, at the beginning of the conversation the agent will make a POST request to this endpoint to get configuration options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_endpoint: Option<OutboundCallConfigConfigurationEndpoint>,
+    /// Additional runtime parameters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_params: Option<HashMap<String, serde_json::Value>>,
     /// Controls how long transcripts and audio recordings are retained before deletion.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_retention_policy: Option<DataRetentionPolicy>,
@@ -157,6 +160,7 @@ pub struct OutboundCallConfigBuilder {
     enable_assistant_backchannel: Option<bool>,
     assistant_backchannel_aggressiveness: Option<f64>,
     configuration_endpoint: Option<OutboundCallConfigConfigurationEndpoint>,
+    additional_params: Option<HashMap<String, serde_json::Value>>,
     data_retention_policy: Option<DataRetentionPolicy>,
 }
 
@@ -326,6 +330,11 @@ impl OutboundCallConfigBuilder {
         self
     }
 
+    pub fn additional_params(mut self, value: HashMap<String, serde_json::Value>) -> Self {
+        self.additional_params = Some(value);
+        self
+    }
+
     pub fn data_retention_policy(mut self, value: DataRetentionPolicy) -> Self {
         self.data_retention_policy = Some(value);
         self
@@ -367,6 +376,7 @@ impl OutboundCallConfigBuilder {
             enable_assistant_backchannel: self.enable_assistant_backchannel,
             assistant_backchannel_aggressiveness: self.assistant_backchannel_aggressiveness,
             configuration_endpoint: self.configuration_endpoint,
+            additional_params: self.additional_params,
             data_retention_policy: self.data_retention_policy,
         })
     }

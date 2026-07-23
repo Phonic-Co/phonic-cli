@@ -59,6 +59,9 @@ pub struct Tool {
     /// When true, forces the agent to speak before executing the tool.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_speech_before_tool_call: Option<bool>,
+    /// For built_in_natural_conversation_ending and built_in_keypad_input tools. Whether the agent must speak before calling the tool ("required"), the model decides ("optional"), or the agent must stay silent ("suppressed"). Not used by other tool types.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speech_before_tool_call: Option<ToolSpeechBeforeToolCall>,
     /// If true, the agent will wait to finish speaking before executing the tool. This is only available for custom_webhook and custom_websocket tools.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wait_for_speech_before_tool_call: Option<bool>,
@@ -104,6 +107,7 @@ pub struct ToolBuilder {
     detect_voicemail: Option<bool>,
     agents_to_transfer_to: Option<Vec<String>>,
     require_speech_before_tool_call: Option<bool>,
+    speech_before_tool_call: Option<ToolSpeechBeforeToolCall>,
     wait_for_speech_before_tool_call: Option<bool>,
     forbid_speech_after_tool_call: Option<bool>,
     allow_tool_chaining: Option<bool>,
@@ -207,6 +211,11 @@ impl ToolBuilder {
         self
     }
 
+    pub fn speech_before_tool_call(mut self, value: ToolSpeechBeforeToolCall) -> Self {
+        self.speech_before_tool_call = Some(value);
+        self
+    }
+
     pub fn wait_for_speech_before_tool_call(mut self, value: bool) -> Self {
         self.wait_for_speech_before_tool_call = Some(value);
         self
@@ -261,6 +270,7 @@ impl ToolBuilder {
             detect_voicemail: self.detect_voicemail,
             agents_to_transfer_to: self.agents_to_transfer_to,
             require_speech_before_tool_call: self.require_speech_before_tool_call,
+            speech_before_tool_call: self.speech_before_tool_call,
             wait_for_speech_before_tool_call: self.wait_for_speech_before_tool_call,
             forbid_speech_after_tool_call: self.forbid_speech_after_tool_call,
             allow_tool_chaining: self.allow_tool_chaining,

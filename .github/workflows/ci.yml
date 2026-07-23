@@ -50,11 +50,6 @@ jobs:
     needs: [check, compile, test]
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.runner }}
-    # aarch64-linux-musl currently fails to link (dbus/keyring + musl outline
-    # atomics — Fern-generated, upstream fix pending). Let only that leg fail
-    # without blocking publish-launcher, so the other platforms + the main
-    # package still publish. Remove once the arm64 build is fixed.
-    continue-on-error: ${{ matrix.rust-target == 'aarch64-unknown-linux-musl' }}
     permissions:
       contents: read
       id-token: write
@@ -114,11 +109,6 @@ jobs:
 
       - name: Package and publish npm platform package
         shell: bash
-        env:
-          # One-time bootstrap: npm OIDC/trusted-publishing can't create a
-          # package's first version, so v1 publishes with a token. Reverts to
-          # OIDC on the next Fern regen (once the packages exist on npm).
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -193,10 +183,6 @@ jobs:
 
       - name: Publish launcher package
         shell: bash
-        env:
-          # One-time bootstrap (see platform-package step). Token auth for the
-          # initial publish; the next Fern regen restores OIDC.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
 

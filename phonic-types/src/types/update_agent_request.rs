@@ -62,6 +62,9 @@ pub struct UpdateAgentRequest {
     /// Array of built-in or custom tool names to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<UpdateAgentRequestToolsItem>>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID. Built-in tools not listed here use their default configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub built_in_tool_configs: Option<BuiltInToolConfigs>,
     /// Array of task objects with `name` and `description` fields.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<Task>>,
@@ -190,6 +193,7 @@ pub struct UpdateAgentRequestBuilder {
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, UpdateAgentRequestTemplateVariablesValue>>,
     tools: Option<Vec<UpdateAgentRequestToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -311,6 +315,11 @@ impl UpdateAgentRequestBuilder {
 
     pub fn tools(mut self, value: Vec<UpdateAgentRequestToolsItem>) -> Self {
         self.tools = Some(value);
+        self
+    }
+
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
         self
     }
 
@@ -490,6 +499,7 @@ impl UpdateAgentRequestBuilder {
             system_prompt: self.system_prompt,
             template_variables: self.template_variables,
             tools: self.tools,
+            built_in_tool_configs: self.built_in_tool_configs,
             tasks: self.tasks,
             generate_no_input_poke_text: self.generate_no_input_poke_text,
             no_input_poke_sec: self.no_input_poke_sec,
