@@ -59,6 +59,9 @@ pub struct Agent {
     /// List of tools available to the agent.
     #[serde(default)]
     pub tools: Vec<AgentToolsItem>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID.
+    #[serde(default)]
+    pub built_in_tool_configs: BuiltInToolConfigs,
     /// Tasks for the agent to complete during the conversation.
     #[serde(default)]
     pub tasks: Vec<Task>,
@@ -174,6 +177,7 @@ pub struct AgentBuilder {
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, AgentTemplateVariablesValue>>,
     tools: Option<Vec<AgentToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -292,6 +296,11 @@ impl AgentBuilder {
 
     pub fn tools(mut self, value: Vec<AgentToolsItem>) -> Self {
         self.tools = Some(value);
+        self
+    }
+
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
         self
     }
 
@@ -451,6 +460,7 @@ impl AgentBuilder {
     /// - [`system_prompt`](AgentBuilder::system_prompt)
     /// - [`template_variables`](AgentBuilder::template_variables)
     /// - [`tools`](AgentBuilder::tools)
+    /// - [`built_in_tool_configs`](AgentBuilder::built_in_tool_configs)
     /// - [`tasks`](AgentBuilder::tasks)
     /// - [`generate_no_input_poke_text`](AgentBuilder::generate_no_input_poke_text)
     /// - [`no_input_poke_text`](AgentBuilder::no_input_poke_text)
@@ -483,6 +493,7 @@ impl AgentBuilder {
             system_prompt: self.system_prompt.ok_or_else(|| BuildError::missing_field("system_prompt"))?,
             template_variables: self.template_variables.ok_or_else(|| BuildError::missing_field("template_variables"))?,
             tools: self.tools.ok_or_else(|| BuildError::missing_field("tools"))?,
+            built_in_tool_configs: self.built_in_tool_configs.ok_or_else(|| BuildError::missing_field("built_in_tool_configs"))?,
             tasks: self.tasks.ok_or_else(|| BuildError::missing_field("tasks"))?,
             generate_no_input_poke_text: self.generate_no_input_poke_text.ok_or_else(|| BuildError::missing_field("generate_no_input_poke_text"))?,
             no_input_poke_sec: self.no_input_poke_sec,

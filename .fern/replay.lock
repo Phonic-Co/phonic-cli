@@ -12,22 +12,40 @@ generations:
     cli_version: unknown
     generator_versions:
       fernapi/fern-cli-generator: 0.21.1
-current_generation: 6fb843fc18bbe79364464937b91d5fce4ba980c7
+  - commit_sha: 75584e70d17afbb18a0b23e844673c6fb104248b
+    tree_hash: f0e937d345800794d807b364fb2be4aed8518a3a
+    timestamp: 2026-07-23T00:08:51.877Z
+    cli_version: unknown
+    generator_versions:
+      fernapi/fern-cli-generator: 0.21.1
+current_generation: 75584e70d17afbb18a0b23e844673c6fb104248b
 patches:
   - id: patch-a37467f0
-    content_hash: sha256:be8047eba2b224e5c54936541423310342b60e1dbcb2cbc430ad118ca6fed06b
+    content_hash: sha256:c5951b4ac0dffc07302bedab3a0856b29eb6e8bef2af9a355b82d9f5206e52f1
     original_commit: a37467f0f5e6e3bb68d1c22149de4a4c24266fc3
     original_message: "ci: token auth for the initial npm publish (one-time bootstrap)"
     original_author: Arun Wongprommoon <arun@phonic.co>
-    base_generation: 6fb843fc18bbe79364464937b91d5fce4ba980c7
+    base_generation: 75584e70d17afbb18a0b23e844673c6fb104248b
     files:
       - .github/workflows/ci.yml
     patch_content: |+
       diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
-      index 27047de..2de1a11 100644
+      index 27047de..34b90b9 100644
       --- a/.github/workflows/ci.yml
       +++ b/.github/workflows/ci.yml
-      @@ -109,6 +109,11 @@ jobs:
+      @@ -50,6 +50,11 @@ jobs:
+           needs: [check, compile, test]
+           if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+           runs-on: ${{ matrix.runner }}
+      +    # aarch64-linux-musl currently fails to link (dbus/keyring + musl outline
+      +    # atomics — Fern-generated, upstream fix pending). Let only that leg fail
+      +    # without blocking publish-launcher, so the other platforms + the main
+      +    # package still publish. Remove once the arm64 build is fixed.
+      +    continue-on-error: ${{ matrix.rust-target == 'aarch64-unknown-linux-musl' }}
+           permissions:
+             contents: read
+             id-token: write
+      @@ -109,6 +114,11 @@ jobs:
        
              - name: Package and publish npm platform package
                shell: bash
@@ -39,7 +57,7 @@ patches:
                run: |
                  set -euo pipefail
        
-      @@ -183,6 +188,10 @@ jobs:
+      @@ -183,6 +193,10 @@ jobs:
        
              - name: Publish launcher package
                shell: bash
@@ -104,6 +122,11 @@ patches:
             needs: [check, compile, test]
             if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
             runs-on: ${{ matrix.runner }}
+            # aarch64-linux-musl currently fails to link (dbus/keyring + musl outline
+            # atomics — Fern-generated, upstream fix pending). Let only that leg fail
+            # without blocking publish-launcher, so the other platforms + the main
+            # package still publish. Remove once the arm64 build is fixed.
+            continue-on-error: ${{ matrix.rust-target == 'aarch64-unknown-linux-musl' }}
             permissions:
               contents: read
               id-token: write

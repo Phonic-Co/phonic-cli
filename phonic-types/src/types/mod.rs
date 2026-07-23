@@ -5,8 +5,8 @@
 //!
 //! ## Type Categories
 //!
-//! - **Request/Response Types**: 127 types for API operations
-//! - **Model Types**: 131 types for data representation
+//! - **Request/Response Types**: 129 types for API operations
+//! - **Model Types**: 137 types for data representation
 
 pub mod agents_agents_list_response;
 pub mod agents_agents_create_response;
@@ -32,11 +32,13 @@ pub mod tools_tools_list_response;
 pub mod tools_create_tool_request_type;
 pub mod tools_create_tool_request_execution_mode;
 pub mod tools_create_tool_request_endpoint_method;
+pub mod tools_create_tool_request_speech_before_tool_call;
 pub mod tools_tools_create_response;
 pub mod tools_tools_get_response;
 pub mod tools_tools_delete_response;
 pub mod tools_update_tool_request_execution_mode;
 pub mod tools_update_tool_request_endpoint_method;
+pub mod tools_update_tool_request_speech_before_tool_call;
 pub mod tools_tools_update_response;
 pub mod extraction_schemas_extraction_schemas_list_response;
 pub mod extraction_schemas_extraction_schemas_create_response;
@@ -93,6 +95,9 @@ pub mod data_retention_policy_audio_recordings;
 pub mod data_retention_policy;
 pub mod outbound_number_pool;
 pub mod agent_integration;
+pub mod built_in_tool_config_speech_before_tool_call;
+pub mod built_in_tool_config;
+pub mod built_in_tool_configs;
 pub mod agent_project;
 pub mod agent_audio_format;
 pub mod agent_background_noise;
@@ -117,6 +122,7 @@ pub mod tool_project;
 pub mod tool_type;
 pub mod tool_execution_mode;
 pub mod tool_endpoint_method;
+pub mod tool_speech_before_tool_call;
 pub mod tool;
 pub mod tool_parameter_type;
 pub mod tool_parameter_item_type;
@@ -192,6 +198,8 @@ pub mod config_options_data_retention_policy;
 pub mod config_options;
 pub mod tool_definition;
 pub mod tool_name;
+pub mod built_in_tool_definition_name;
+pub mod built_in_tool_definition;
 pub mod inline_web_socket_tool_execution_mode;
 pub mod inline_web_socket_tool;
 pub mod open_ai_tool;
@@ -291,11 +299,13 @@ pub use tools_tools_list_response::ToolsListResponse;
 pub use tools_create_tool_request_type::CreateToolRequestType;
 pub use tools_create_tool_request_execution_mode::CreateToolRequestExecutionMode;
 pub use tools_create_tool_request_endpoint_method::CreateToolRequestEndpointMethod;
+pub use tools_create_tool_request_speech_before_tool_call::CreateToolRequestSpeechBeforeToolCall;
 pub use tools_tools_create_response::ToolsCreateResponse;
 pub use tools_tools_get_response::ToolsGetResponse;
 pub use tools_tools_delete_response::ToolsDeleteResponse;
 pub use tools_update_tool_request_execution_mode::UpdateToolRequestExecutionMode;
 pub use tools_update_tool_request_endpoint_method::UpdateToolRequestEndpointMethod;
+pub use tools_update_tool_request_speech_before_tool_call::UpdateToolRequestSpeechBeforeToolCall;
 pub use tools_tools_update_response::ToolsUpdateResponse;
 pub use extraction_schemas_extraction_schemas_list_response::ExtractionSchemasListResponse;
 pub use extraction_schemas_extraction_schemas_create_response::ExtractionSchemasCreateResponse;
@@ -352,6 +362,9 @@ pub use data_retention_policy_audio_recordings::DataRetentionPolicyAudioRecordin
 pub use data_retention_policy::DataRetentionPolicy;
 pub use outbound_number_pool::OutboundNumberPool;
 pub use agent_integration::AgentIntegration;
+pub use built_in_tool_config_speech_before_tool_call::BuiltInToolConfigSpeechBeforeToolCall;
+pub use built_in_tool_config::BuiltInToolConfig;
+pub use built_in_tool_configs::BuiltInToolConfigs;
 pub use agent_project::AgentProject;
 pub use agent_audio_format::AgentAudioFormat;
 pub use agent_background_noise::AgentBackgroundNoise;
@@ -376,6 +389,7 @@ pub use tool_project::ToolProject;
 pub use tool_type::ToolType;
 pub use tool_execution_mode::ToolExecutionMode;
 pub use tool_endpoint_method::ToolEndpointMethod;
+pub use tool_speech_before_tool_call::ToolSpeechBeforeToolCall;
 pub use tool::Tool;
 pub use tool_parameter_type::ToolParameterType;
 pub use tool_parameter_item_type::ToolParameterItemType;
@@ -451,6 +465,8 @@ pub use config_options_data_retention_policy::ConfigOptionsDataRetentionPolicy;
 pub use config_options::ConfigOptions;
 pub use tool_definition::ToolDefinition;
 pub use tool_name::ToolName;
+pub use built_in_tool_definition_name::BuiltInToolDefinitionName;
+pub use built_in_tool_definition::BuiltInToolDefinition;
 pub use inline_web_socket_tool_execution_mode::InlineWebSocketToolExecutionMode;
 pub use inline_web_socket_tool::InlineWebSocketTool;
 pub use open_ai_tool::OpenAiTool;
