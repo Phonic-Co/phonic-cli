@@ -150,6 +150,9 @@ pub struct Conversation {
     /// Arbitrary metadata associated with the conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<HashMap<String, serde_json::Value>>,
+    /// Whether an inaudible watermark was embedded in the audio the agent generated during the conversation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// Controls how long transcripts and audio recordings are retained before deletion.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_retention_policy: Option<DataRetentionPolicy>,
@@ -220,6 +223,7 @@ pub struct ConversationBuilder {
     is_redacted: Option<bool>,
     redacted_transcript: Option<String>,
     metadata: Option<HashMap<String, serde_json::Value>>,
+    enable_watermarking: Option<bool>,
     data_retention_policy: Option<DataRetentionPolicy>,
     deletion_info: Option<ConversationDeletionInfo>,
     enable_assistant_backchannel: Option<bool>,
@@ -462,6 +466,11 @@ impl ConversationBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn data_retention_policy(mut self, value: DataRetentionPolicy) -> Self {
         self.data_retention_policy = Some(value);
         self
@@ -553,6 +562,7 @@ impl ConversationBuilder {
             is_redacted: self.is_redacted,
             redacted_transcript: self.redacted_transcript,
             metadata: self.metadata,
+            enable_watermarking: self.enable_watermarking,
             data_retention_policy: self.data_retention_policy,
             deletion_info: self.deletion_info,
             enable_assistant_backchannel: self.enable_assistant_backchannel,

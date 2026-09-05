@@ -53,6 +53,11 @@ pub enum ApiError {
         message: String,
         error: Option<BasicErrorError>,
     },
+    #[error("BadGatewayError: {message}")]
+    BadGatewayError {
+        message: String,
+        error: Option<BasicErrorError>,
+    },
     #[error("HTTP error {status}: {message}")]
     Http { status: u16, message: String },
     #[error("Network error: {0}")]
@@ -292,6 +297,27 @@ impl ApiError {
                     }
                 }
                 return Self::ServiceUnavailableError {
+                    message: body.unwrap_or("Unknown error").to_string(),
+                    error: None,
+                };
+            }
+            502 => {
+                // Parse error body for BadGatewayError;
+                if let Some(body_str) = body {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
+                        return Self::BadGatewayError {
+                            message: parsed
+                                .get("message")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown error")
+                                .to_string(),
+                            error: parsed.get("error").and_then(|v| {
+                                serde_json::from_value::<BasicErrorError>(v.clone()).ok()
+                            }),
+                        };
+                    }
+                }
+                return Self::BadGatewayError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     error: None,
                 };

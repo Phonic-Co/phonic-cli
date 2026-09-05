@@ -21,6 +21,10 @@ pub struct StreamTtsRequest {
     /// The audio format to stream.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_format: Option<StreamTtsRequestOutputFormat>,
+    /// Candidate languages for synthesis. An empty array defaults to English, one language
+    /// selects it directly, and multiple languages let Phonic detect among those candidates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub languages: Option<Vec<LanguageCode>>,
 }
 
 impl StreamTtsRequest {
@@ -37,6 +41,7 @@ pub struct StreamTtsRequestBuilder {
     speed: Option<f64>,
     voice_id: Option<String>,
     output_format: Option<StreamTtsRequestOutputFormat>,
+    languages: Option<Vec<LanguageCode>>,
 }
 
 impl StreamTtsRequestBuilder {
@@ -65,6 +70,11 @@ impl StreamTtsRequestBuilder {
         self
     }
 
+    pub fn languages(mut self, value: Vec<LanguageCode>) -> Self {
+        self.languages = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`StreamTtsRequest`].
     /// This method will fail if any of the following fields are not set:
     /// - [`text`](StreamTtsRequestBuilder::text)
@@ -75,6 +85,7 @@ impl StreamTtsRequestBuilder {
             speed: self.speed,
             voice_id: self.voice_id,
             output_format: self.output_format,
+            languages: self.languages,
         })
     }
 }

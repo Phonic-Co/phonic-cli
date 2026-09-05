@@ -9,6 +9,9 @@ pub struct ToolParameter {
     /// Required only when type is "array". The type of items in the array.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub item_type: Option<ToolParameterItemType>,
+    /// Required only when type is "enum". The fixed set of allowed string values for the parameter. Values must be unique and non-empty.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enum_values: Option<Vec<String>>,
     /// The parameter name.
     #[serde(default)]
     pub name: String,
@@ -22,7 +25,7 @@ pub struct ToolParameter {
     /// - For GET webhooks: defaults to `"query_string"` and `"request_body"` is not allowed.
     /// - For POST webhooks: required, can be either `"request_body"` or `"query_string"`.
     /// - Not allowed for `custom_websocket`, `built_in_transfer_to_phone_number`, or `built_in_transfer_to_agent` tools.
-    /// When updating a tool's type or endpoint_method, all parameters must include explicit `location` values.
+    /// When switching a webhook tool's `endpoint_method` from POST to GET, its request body parameters must be re-sent with `"query_string"` locations.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<ToolParameterLocation>,
 }
@@ -38,6 +41,7 @@ impl ToolParameter {
 pub struct ToolParameterBuilder {
     r#type: Option<ToolParameterType>,
     item_type: Option<ToolParameterItemType>,
+    enum_values: Option<Vec<String>>,
     name: Option<String>,
     description: Option<String>,
     is_required: Option<bool>,
@@ -52,6 +56,11 @@ impl ToolParameterBuilder {
 
     pub fn item_type(mut self, value: ToolParameterItemType) -> Self {
         self.item_type = Some(value);
+        self
+    }
+
+    pub fn enum_values(mut self, value: Vec<String>) -> Self {
+        self.enum_values = Some(value);
         self
     }
 
@@ -85,6 +94,7 @@ impl ToolParameterBuilder {
         Ok(ToolParameter {
             r#type: self.r#type.ok_or_else(|| BuildError::missing_field("r#type"))?,
             item_type: self.item_type,
+            enum_values: self.enum_values,
             name: self.name.ok_or_else(|| BuildError::missing_field("name"))?,
             description: self.description.ok_or_else(|| BuildError::missing_field("description"))?,
             is_required: self.is_required.ok_or_else(|| BuildError::missing_field("is_required"))?,

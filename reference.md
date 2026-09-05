@@ -9,8 +9,10 @@ Full command reference for `phonic`.
 - [`phonic auth`](#phonic-auth)
 - [`phonic conversation-items`](#phonic-conversation-items)
 - [`phonic conversations`](#phonic-conversations)
+- [`phonic external-storage-policies`](#phonic-external-storage-policies)
 - [`phonic extraction-schemas`](#phonic-extraction-schemas)
 - [`phonic projects`](#phonic-projects)
+- [`phonic responses`](#phonic-responses)
 - [`phonic tools`](#phonic-tools)
 - [`phonic tts`](#phonic-tts)
 - [`phonic voices`](#phonic-voices)
@@ -30,9 +32,9 @@ Adds a custom phone number to an agent. The user must configure their SIP trunk 
 |------|------|----------|-------------|
 | `--name-or-id` | `string` | Yes | The name or the ID of the agent. |
 | `--project` | `string` | No | The name of the project containing the agent. Only used when `nameOrId` is a name. |
-| `--x-sip-address` | `string` | No | SIP address of the user's SIP trunk. Optional, but if provided, all three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. When these headers are provided, call transfers from the agent will use the provided SIP details. |
-| `--x-sip-auth-username` | `string` | No | SIP auth username. Optional, but if provided, all three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. When these headers are provided, call transfers from the agent will use the provided SIP details. |
-| `--x-sip-auth-password` | `string` | No | SIP auth password. Optional, but if provided, all three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. When these headers are provided, call transfers from the agent will use the provided SIP details. |
+| `--x-sip-address` | `string` | Yes | SIP address of the user's SIP trunk. Required. All three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. They are used for outbound calls and call transfers from the agent. |
+| `--x-sip-auth-username` | `string` | Yes | SIP auth username. Required. All three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. They are used for outbound calls and call transfers from the agent. |
+| `--x-sip-auth-password` | `string` | Yes | SIP auth password. Required. All three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. They are used for outbound calls and call transfers from the agent. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
 #### `phonic agents create`
@@ -203,8 +205,9 @@ Creates a short-lived session token that can be used to authenticate WebSocket c
 Returns the alternative response(s) the assistant would have
 produced for this conversation turn given changes to the agent system prompt.
 
-Only assistant items from ended conversations can be replayed. The
-conversation must have an associated agent.
+Only assistant items from ended conversations can be replayed. Omit the
+request body (or omit `system_prompt`) to replay the turn exactly as it
+originally ran.
 
 
 `POST /conversation_items/{id}/replay`
@@ -212,7 +215,7 @@ conversation must have an associated agent.
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--id` | `string` | Yes | The ID of the conversation item to replay. |
-| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+| `--json` | `JSON` | No | Request body as JSON (or use individual body-field flags) |
 
 ---
 
@@ -360,6 +363,65 @@ Initiates a SIP outbound call using user-supplied SIP credentials in headers.
 
 ---
 
+### `phonic external-storage-policies`
+
+#### `phonic external-storage-policies create`
+
+Creates a new external storage policy in a project. Agents referencing the policy deliver their conversation artifacts to the configured S3-compatible bucket.
+
+`POST /external_storage_policies`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--project` | `string` | No | The name of the project to create the external storage policy in. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `phonic external-storage-policies delete`
+
+Deletes an external storage policy by name or ID. The policy must not be referenced by any agent.
+
+`DELETE /external_storage_policies/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the external storage policy to delete. |
+| `--project` | `string` | No | The name of the project containing the external storage policy. Only used when `nameOrId` is a name. |
+
+#### `phonic external-storage-policies get`
+
+Returns an external storage policy by name or ID.
+
+`GET /external_storage_policies/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the external storage policy to get. |
+| `--project` | `string` | No | The name of the project containing the external storage policy. Only used when `nameOrId` is a name. |
+
+#### `phonic external-storage-policies list`
+
+Returns all external storage policies in a project.
+
+`GET /external_storage_policies`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--project` | `string` | No | The name of the project to list external storage policies for. |
+
+#### `phonic external-storage-policies update`
+
+Updates an external storage policy by name or ID. Credentials can only be rotated by providing both `access_key_id` and `secret_access_key`.
+
+`PATCH /external_storage_policies/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the external storage policy to update. |
+| `--project` | `string` | No | The name of the project containing the external storage policy. Only used when `nameOrId` is a name. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+---
+
 ### `phonic extraction-schemas`
 
 #### `phonic extraction-schemas create`
@@ -497,6 +559,36 @@ Updates a project by name or ID.
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--name-or-id` | `string` | Yes | The name or the ID of the project to update. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+---
+
+### `phonic responses`
+
+#### `phonic responses create`
+
+Generates one or more alternative assistant responses for a conversation
+you supply inline to simulate Phonic agent behavior.
+
+This endpoint is stateless, so it does not create a new conversation or
+store anything. The request carries the system prompt, a conversation so
+far as `input`, and the tools the assistant may call as
+`tool_definitions`.
+
+Each item in `input` is a user message, an assistant message (with
+optional `tool_calls`), or a `tool_call_output`. Every assistant tool
+call must be followed immediately by the `tool_call_output` item that
+carries its result.
+
+This is an experimental feature and must be enabled for your workspace;
+otherwise, it returns `404`. Please contact our team if you would like
+access.
+
+
+`POST /responses`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
 ---

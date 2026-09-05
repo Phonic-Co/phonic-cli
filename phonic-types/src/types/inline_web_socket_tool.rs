@@ -22,6 +22,9 @@ pub struct InlineWebSocketTool {
     /// When true, prevents the assistant from speaking after executing the tool.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub forbid_speech_after_tool_call: Option<bool>,
+    /// When true, prevents the assistant from calling the tool right after it has spoken.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub forbid_tool_call_after_speech: Option<bool>,
     /// When true, allows the assistant to call another tool after this tool.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_tool_chaining: Option<bool>,
@@ -46,6 +49,7 @@ pub struct InlineWebSocketToolBuilder {
     require_speech_before_tool_call: Option<bool>,
     wait_for_speech_before_tool_call: Option<bool>,
     forbid_speech_after_tool_call: Option<bool>,
+    forbid_tool_call_after_speech: Option<bool>,
     allow_tool_chaining: Option<bool>,
     wait_for_response: Option<bool>,
 }
@@ -86,6 +90,11 @@ impl InlineWebSocketToolBuilder {
         self
     }
 
+    pub fn forbid_tool_call_after_speech(mut self, value: bool) -> Self {
+        self.forbid_tool_call_after_speech = Some(value);
+        self
+    }
+
     pub fn allow_tool_chaining(mut self, value: bool) -> Self {
         self.allow_tool_chaining = Some(value);
         self
@@ -109,6 +118,7 @@ impl InlineWebSocketToolBuilder {
             require_speech_before_tool_call: self.require_speech_before_tool_call,
             wait_for_speech_before_tool_call: self.wait_for_speech_before_tool_call,
             forbid_speech_after_tool_call: self.forbid_speech_after_tool_call,
+            forbid_tool_call_after_speech: self.forbid_tool_call_after_speech,
             allow_tool_chaining: self.allow_tool_chaining,
             wait_for_response: self.wait_for_response,
         })
