@@ -62,6 +62,9 @@ pub struct UpdateAgentRequest {
     /// Array of built-in or custom tool names to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<UpdateAgentRequestToolsItem>>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID. Built-in tools not listed here use their default configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub built_in_tool_configs: Option<BuiltInToolConfigs>,
     /// Array of task objects with `name` and `description` fields.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<Task>>,
@@ -149,15 +152,21 @@ pub struct UpdateAgentRequest {
     #[serde(default)]
     #[serde(with = "crate::core::number_serializers::option")]
     pub vad_threshold: Option<f64>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the agent generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// Array of MCP server IDs to make available to the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcp_server_ids: Option<Vec<String>>,
     /// Names of observability integrations to enable for the agent. Each must be one of the supported providers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability_integrations: Option<Vec<String>>,
+    /// Name of an external storage policy in the same project that conversation artifacts are delivered to. Set to `null` to stop delivering artifacts. Requires zero data retention and cannot be combined with `enable_redaction`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_storage_policy: Option<String>,
     /// The name of the project containing the agent. Only used when `nameOrId` is a name.
     #[serde(skip)]
     pub project: Option<String>,
@@ -190,6 +199,7 @@ pub struct UpdateAgentRequestBuilder {
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, UpdateAgentRequestTemplateVariablesValue>>,
     tools: Option<Vec<UpdateAgentRequestToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -218,8 +228,10 @@ pub struct UpdateAgentRequestBuilder {
     vad_min_silence_duration_ms: Option<i64>,
     vad_threshold: Option<f64>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     mcp_server_ids: Option<Vec<String>>,
     observability_integrations: Option<Vec<String>>,
+    external_storage_policy: Option<String>,
     project: Option<String>,
 }
 
@@ -311,6 +323,11 @@ impl UpdateAgentRequestBuilder {
 
     pub fn tools(mut self, value: Vec<UpdateAgentRequestToolsItem>) -> Self {
         self.tools = Some(value);
+        self
+    }
+
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
         self
     }
 
@@ -454,6 +471,11 @@ impl UpdateAgentRequestBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn mcp_server_ids(mut self, value: Vec<String>) -> Self {
         self.mcp_server_ids = Some(value);
         self
@@ -461,6 +483,11 @@ impl UpdateAgentRequestBuilder {
 
     pub fn observability_integrations(mut self, value: Vec<String>) -> Self {
         self.observability_integrations = Some(value);
+        self
+    }
+
+    pub fn external_storage_policy(mut self, value: impl Into<String>) -> Self {
+        self.external_storage_policy = Some(value.into());
         self
     }
 
@@ -490,6 +517,7 @@ impl UpdateAgentRequestBuilder {
             system_prompt: self.system_prompt,
             template_variables: self.template_variables,
             tools: self.tools,
+            built_in_tool_configs: self.built_in_tool_configs,
             tasks: self.tasks,
             generate_no_input_poke_text: self.generate_no_input_poke_text,
             no_input_poke_sec: self.no_input_poke_sec,
@@ -518,8 +546,10 @@ impl UpdateAgentRequestBuilder {
             vad_min_silence_duration_ms: self.vad_min_silence_duration_ms,
             vad_threshold: self.vad_threshold,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             mcp_server_ids: self.mcp_server_ids,
             observability_integrations: self.observability_integrations,
+            external_storage_policy: self.external_storage_policy,
             project: self.project,
         })
     }

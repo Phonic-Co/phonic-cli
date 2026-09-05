@@ -6,7 +6,7 @@ use super::*;
 /// - For GET webhooks: defaults to `"query_string"` and `"request_body"` is not allowed.
 /// - For POST webhooks: required, can be either `"request_body"` or `"query_string"`.
 /// - Not allowed for `custom_websocket`, `built_in_transfer_to_phone_number`, or `built_in_transfer_to_agent` tools.
-/// When updating a tool's type or endpoint_method, all parameters must include explicit `location` values.
+/// When switching a webhook tool's `endpoint_method` from POST to GET, its request body parameters must be re-sent with `"query_string"` locations.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ToolParameterLocation {

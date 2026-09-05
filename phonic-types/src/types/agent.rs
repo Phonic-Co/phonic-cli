@@ -59,6 +59,9 @@ pub struct Agent {
     /// List of tools available to the agent.
     #[serde(default)]
     pub tools: Vec<AgentToolsItem>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID.
+    #[serde(default)]
+    pub built_in_tool_configs: BuiltInToolConfigs,
     /// Tasks for the agent to complete during the conversation.
     #[serde(default)]
     pub tasks: Vec<Task>,
@@ -95,6 +98,9 @@ pub struct Agent {
     /// Names of observability integrations enabled for the agent. Each must be one of the supported providers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability_integrations: Option<Vec<String>>,
+    /// Name of the external storage policy that conversation artifacts are delivered to. `null` when the agent doesn't deliver artifacts to external storage.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_storage_policy: Option<String>,
     /// Array of `{ word, pronunciation }` entries. Words must be unique.
     #[serde(default)]
     pub pronunciation_dictionary: Vec<AgentPronunciationDictionaryItem>,
@@ -126,9 +132,12 @@ pub struct Agent {
     #[serde(default)]
     #[serde(with = "crate::core::number_serializers::option")]
     pub vad_threshold: Option<f64>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the agent generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// The URL-friendly slug of the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slug: Option<String>,
@@ -174,6 +183,7 @@ pub struct AgentBuilder {
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, AgentTemplateVariablesValue>>,
     tools: Option<Vec<AgentToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -187,6 +197,7 @@ pub struct AgentBuilder {
     intelligence_level: Option<AgentIntelligenceLevel>,
     boosted_keywords: Option<Vec<String>>,
     observability_integrations: Option<Vec<String>>,
+    external_storage_policy: Option<String>,
     pronunciation_dictionary: Option<Vec<AgentPronunciationDictionaryItem>>,
     min_words_to_interrupt: Option<i64>,
     configuration_endpoint: Option<AgentConfigurationEndpoint>,
@@ -197,6 +208,7 @@ pub struct AgentBuilder {
     vad_min_silence_duration_ms: Option<i64>,
     vad_threshold: Option<f64>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     slug: Option<String>,
     enable_assistant_backchannel: Option<bool>,
     assistant_backchannel_aggressiveness: Option<f64>,
@@ -295,6 +307,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
+        self
+    }
+
     pub fn tasks(mut self, value: Vec<Task>) -> Self {
         self.tasks = Some(value);
         self
@@ -360,6 +377,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn external_storage_policy(mut self, value: impl Into<String>) -> Self {
+        self.external_storage_policy = Some(value.into());
+        self
+    }
+
     pub fn pronunciation_dictionary(mut self, value: Vec<AgentPronunciationDictionaryItem>) -> Self {
         self.pronunciation_dictionary = Some(value);
         self
@@ -410,6 +432,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn slug(mut self, value: impl Into<String>) -> Self {
         self.slug = Some(value.into());
         self
@@ -451,6 +478,7 @@ impl AgentBuilder {
     /// - [`system_prompt`](AgentBuilder::system_prompt)
     /// - [`template_variables`](AgentBuilder::template_variables)
     /// - [`tools`](AgentBuilder::tools)
+    /// - [`built_in_tool_configs`](AgentBuilder::built_in_tool_configs)
     /// - [`tasks`](AgentBuilder::tasks)
     /// - [`generate_no_input_poke_text`](AgentBuilder::generate_no_input_poke_text)
     /// - [`no_input_poke_text`](AgentBuilder::no_input_poke_text)
@@ -483,6 +511,7 @@ impl AgentBuilder {
             system_prompt: self.system_prompt.ok_or_else(|| BuildError::missing_field("system_prompt"))?,
             template_variables: self.template_variables.ok_or_else(|| BuildError::missing_field("template_variables"))?,
             tools: self.tools.ok_or_else(|| BuildError::missing_field("tools"))?,
+            built_in_tool_configs: self.built_in_tool_configs.ok_or_else(|| BuildError::missing_field("built_in_tool_configs"))?,
             tasks: self.tasks.ok_or_else(|| BuildError::missing_field("tasks"))?,
             generate_no_input_poke_text: self.generate_no_input_poke_text.ok_or_else(|| BuildError::missing_field("generate_no_input_poke_text"))?,
             no_input_poke_sec: self.no_input_poke_sec,
@@ -496,6 +525,7 @@ impl AgentBuilder {
             intelligence_level: self.intelligence_level.ok_or_else(|| BuildError::missing_field("intelligence_level"))?,
             boosted_keywords: self.boosted_keywords.ok_or_else(|| BuildError::missing_field("boosted_keywords"))?,
             observability_integrations: self.observability_integrations,
+            external_storage_policy: self.external_storage_policy,
             pronunciation_dictionary: self.pronunciation_dictionary.ok_or_else(|| BuildError::missing_field("pronunciation_dictionary"))?,
             min_words_to_interrupt: self.min_words_to_interrupt.ok_or_else(|| BuildError::missing_field("min_words_to_interrupt"))?,
             configuration_endpoint: self.configuration_endpoint,
@@ -506,6 +536,7 @@ impl AgentBuilder {
             vad_min_silence_duration_ms: self.vad_min_silence_duration_ms,
             vad_threshold: self.vad_threshold,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             slug: self.slug,
             enable_assistant_backchannel: self.enable_assistant_backchannel,
             assistant_backchannel_aggressiveness: self.assistant_backchannel_aggressiveness,

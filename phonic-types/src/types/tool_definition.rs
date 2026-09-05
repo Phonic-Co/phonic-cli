@@ -7,12 +7,18 @@ use super::*;
 pub enum ToolDefinition {
         ToolName(ToolName),
 
+        BuiltInToolDefinition(BuiltInToolDefinition),
+
         InlineWebSocketTool(InlineWebSocketTool),
 }
 
 impl ToolDefinition {
     pub fn is_tool_name(&self) -> bool {
         matches!(self, Self::ToolName(_))
+    }
+
+    pub fn is_built_in_tool_definition(&self) -> bool {
+        matches!(self, Self::BuiltInToolDefinition(_))
     }
 
     pub fn is_inline_web_socket_tool(&self) -> bool {
@@ -30,6 +36,20 @@ impl ToolDefinition {
     pub fn into_tool_name(self) -> Option<ToolName> {
         match self {
                     Self::ToolName(value) => Some(value),
+                    _ => None,
+                }
+    }
+
+    pub fn as_built_in_tool_definition(&self) -> Option<&BuiltInToolDefinition> {
+        match self {
+                    Self::BuiltInToolDefinition(value) => Some(value),
+                    _ => None,
+                }
+    }
+
+    pub fn into_built_in_tool_definition(self) -> Option<BuiltInToolDefinition> {
+        match self {
+                    Self::BuiltInToolDefinition(value) => Some(value),
                     _ => None,
                 }
     }
@@ -53,6 +73,7 @@ impl fmt::Display for ToolDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ToolName(value) => write!(f, "{}", serde_json::to_string(value).unwrap_or_else(|_| format!("{:?}", value))),
+            Self::BuiltInToolDefinition(value) => write!(f, "{}", serde_json::to_string(value).unwrap_or_else(|_| format!("{:?}", value))),
             Self::InlineWebSocketTool(value) => write!(f, "{}", serde_json::to_string(value).unwrap_or_else(|_| format!("{:?}", value))),
         }
     }

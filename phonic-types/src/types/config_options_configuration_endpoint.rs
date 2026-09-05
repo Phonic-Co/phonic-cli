@@ -5,7 +5,7 @@ use super::*;
 /// When not `null`, the agent will call this endpoint to get configuration options for the conversation.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct ConfigOptionsConfigurationEndpoint {
-    /// URL to call.
+    /// URL to call. Must be a publicly routable HTTPS URL without embedded credentials.
     #[serde(default)]
     pub url: String,
     /// Object of key-value pairs sent as headers when calling the endpoint.
