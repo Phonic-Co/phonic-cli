@@ -8,6 +8,9 @@ pub struct GenerateReplyPayload {
     /// Optional system message to guide the assistant's reply
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system_message: Option<String>,
+    /// Optional user message for the assistant to reply to
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_message: Option<String>,
 }
 
 impl GenerateReplyPayload {
@@ -21,6 +24,7 @@ impl GenerateReplyPayload {
 pub struct GenerateReplyPayloadBuilder {
     r#type: Option<String>,
     system_message: Option<String>,
+    user_message: Option<String>,
 }
 
 impl GenerateReplyPayloadBuilder {
@@ -34,6 +38,11 @@ impl GenerateReplyPayloadBuilder {
         self
     }
 
+    pub fn user_message(mut self, value: impl Into<String>) -> Self {
+        self.user_message = Some(value.into());
+        self
+    }
+
     /// Consumes the builder and constructs a [`GenerateReplyPayload`].
     /// This method will fail if any of the following fields are not set:
     /// - [`r#type`](GenerateReplyPayloadBuilder::r#type)
@@ -41,6 +50,7 @@ impl GenerateReplyPayloadBuilder {
         Ok(GenerateReplyPayload {
             r#type: self.r#type.ok_or_else(|| BuildError::missing_field("r#type"))?,
             system_message: self.system_message,
+            user_message: self.user_message,
         })
     }
 }

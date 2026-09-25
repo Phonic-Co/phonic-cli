@@ -98,27 +98,36 @@ pub struct ConfigOptions {
     /// The intelligence level of the agent. `high` uses a more capable model for more complex reasoning, while `standard` is optimized for lower latency.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub intelligence_level: Option<ConfigOptionsIntelligenceLevel>,
+    /// The Phonic speech-to-speech model to generate with. Omit it to use the current default model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phonic_model: Option<ConfigOptionsPhonicModel>,
     /// Keywords to boost in speech recognition
     #[serde(skip_serializing_if = "Option::is_none")]
     pub boosted_keywords: Option<Vec<String>>,
     /// Array of `{ word, pronunciation }` entries. Words must be unique.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pronunciation_dictionary: Option<Vec<ConfigOptionsPronunciationDictionaryItem>>,
-    /// Tools available to the assistant. Use a string to reference a pre-defined tool by name, or define an inline WebSocket tool for this conversation.
+    /// Tools available to the assistant. Use a string to reference a pre-defined tool by name, provide a built-in tool object to override its default configuration, or define an inline WebSocket tool for this conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<ToolDefinition>>,
     /// Template variables for system prompt and welcome message
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template_variables: Option<HashMap<String, String>>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the assistant generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// Names of pre-configured MCP servers to make available to the assistant. Names must be unique.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcp_servers: Option<Vec<String>>,
     /// Names of observability integrations to enable for the conversation. Each must be one of the supported providers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability_integrations: Option<Vec<String>>,
+    /// Name of an external storage policy in the same project that conversation artifacts are delivered to. Requires `data_retention_policy.zero_data_retention` to be `true` and cannot be combined with `enable_redaction`. Set to `null` to disable external delivery.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_storage_policy: Option<String>,
     /// Tasks the assistant should accomplish during the conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<ConfigOptionsTasksItem>>,
@@ -136,10 +145,16 @@ pub struct ConfigOptions {
     /// When not `null`, the agent will call this endpoint to get configuration options for the conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_endpoint: Option<ConfigOptionsConfigurationEndpoint>,
+    /// Additional runtime parameters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_params: Option<HashMap<String, serde_json::Value>>,
     /// Policy controlling how long transcripts and audio recordings are retained before being deleted.
     /// When `zero_data_retention` is `true`, nothing is retained and `transcripts`/`audio_recordings` are omitted.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_retention_policy: Option<ConfigOptionsDataRetentionPolicy>,
+    /// External ID to associate with the conversation. Surrounding whitespace is trimmed and the value must not be empty. An external ID set earlier via `set_external_id` takes precedence.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_id: Option<String>,
 }
 
 impl ConfigOptions {
@@ -180,19 +195,24 @@ pub struct ConfigOptionsBuilder {
     push_to_talk: Option<bool>,
     stream_ahead_of_real_time: Option<bool>,
     intelligence_level: Option<ConfigOptionsIntelligenceLevel>,
+    phonic_model: Option<ConfigOptionsPhonicModel>,
     boosted_keywords: Option<Vec<String>>,
     pronunciation_dictionary: Option<Vec<ConfigOptionsPronunciationDictionaryItem>>,
     tools: Option<Vec<ToolDefinition>>,
     template_variables: Option<HashMap<String, String>>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     mcp_servers: Option<Vec<String>>,
     observability_integrations: Option<Vec<String>>,
+    external_storage_policy: Option<String>,
     tasks: Option<Vec<ConfigOptionsTasksItem>>,
     outbound_number_pool: Option<ConfigOptionsOutboundNumberPool>,
     enable_assistant_backchannel: Option<bool>,
     assistant_backchannel_aggressiveness: Option<f64>,
     configuration_endpoint: Option<ConfigOptionsConfigurationEndpoint>,
+    additional_params: Option<HashMap<String, serde_json::Value>>,
     data_retention_policy: Option<ConfigOptionsDataRetentionPolicy>,
+    external_id: Option<String>,
 }
 
 impl ConfigOptionsBuilder {
@@ -341,6 +361,11 @@ impl ConfigOptionsBuilder {
         self
     }
 
+    pub fn phonic_model(mut self, value: ConfigOptionsPhonicModel) -> Self {
+        self.phonic_model = Some(value);
+        self
+    }
+
     pub fn boosted_keywords(mut self, value: Vec<String>) -> Self {
         self.boosted_keywords = Some(value);
         self
@@ -366,6 +391,11 @@ impl ConfigOptionsBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn mcp_servers(mut self, value: Vec<String>) -> Self {
         self.mcp_servers = Some(value);
         self
@@ -373,6 +403,11 @@ impl ConfigOptionsBuilder {
 
     pub fn observability_integrations(mut self, value: Vec<String>) -> Self {
         self.observability_integrations = Some(value);
+        self
+    }
+
+    pub fn external_storage_policy(mut self, value: impl Into<String>) -> Self {
+        self.external_storage_policy = Some(value.into());
         self
     }
 
@@ -401,8 +436,18 @@ impl ConfigOptionsBuilder {
         self
     }
 
+    pub fn additional_params(mut self, value: HashMap<String, serde_json::Value>) -> Self {
+        self.additional_params = Some(value);
+        self
+    }
+
     pub fn data_retention_policy(mut self, value: ConfigOptionsDataRetentionPolicy) -> Self {
         self.data_retention_policy = Some(value);
+        self
+    }
+
+    pub fn external_id(mut self, value: impl Into<String>) -> Self {
+        self.external_id = Some(value.into());
         self
     }
 
@@ -438,19 +483,24 @@ impl ConfigOptionsBuilder {
             push_to_talk: self.push_to_talk,
             stream_ahead_of_real_time: self.stream_ahead_of_real_time,
             intelligence_level: self.intelligence_level,
+            phonic_model: self.phonic_model,
             boosted_keywords: self.boosted_keywords,
             pronunciation_dictionary: self.pronunciation_dictionary,
             tools: self.tools,
             template_variables: self.template_variables,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             mcp_servers: self.mcp_servers,
             observability_integrations: self.observability_integrations,
+            external_storage_policy: self.external_storage_policy,
             tasks: self.tasks,
             outbound_number_pool: self.outbound_number_pool,
             enable_assistant_backchannel: self.enable_assistant_backchannel,
             assistant_backchannel_aggressiveness: self.assistant_backchannel_aggressiveness,
             configuration_endpoint: self.configuration_endpoint,
+            additional_params: self.additional_params,
             data_retention_policy: self.data_retention_policy,
+            external_id: self.external_id,
         })
     }
 }
