@@ -5,7 +5,7 @@ use super::*;
 /// Phone call metadata. `null` for non-phone call conversations.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct ConversationCallInfo {
-    /// Caller phone number in E.164 format.
+    /// Caller phone number in E.164 format. `"anonymous"` for inbound calls whose caller withheld their number.
     #[serde(default)]
     pub from_phone_number: String,
     /// Callee phone number in E.164 format.

@@ -50,6 +50,12 @@ pub struct UpdateAgentRequest {
     /// Number of seconds of inactivity before the conversation WebSocket is closed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub websocket_timeout_sec: Option<i64>,
+    /// Play an uninterruptible welcome message on incoming calls, then transcribe the caller without responding. Silence timeout and call duration limits still apply.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub listen_only_inbound_enabled: Option<bool>,
+    /// Welcome message for listen-only incoming calls. Can contain template variables like `{{customer_name}}`. Must be nonempty when `listen_only_inbound_enabled` is `true`. Replaces `welcome_message` for these calls, regardless of `generate_welcome_message`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub listen_only_inbound_message: Option<String>,
     /// Message to play when the conversation starts. Can contain template variables like `{{customer_name}}`. Ignored when `generate_welcome_message` is `true`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub welcome_message: Option<String>,
@@ -62,6 +68,9 @@ pub struct UpdateAgentRequest {
     /// Array of built-in or custom tool names to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<UpdateAgentRequestToolsItem>>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID. Built-in tools not listed here use their default configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub built_in_tool_configs: Option<BuiltInToolConfigs>,
     /// Array of task objects with `name` and `description` fields.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<Task>>,
@@ -115,6 +124,9 @@ pub struct UpdateAgentRequest {
     /// The intelligence level of the agent. `high` uses a more capable model for more complex reasoning, while `standard` is optimized for lower latency.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub intelligence_level: Option<UpdateAgentRequestIntelligenceLevel>,
+    /// The Phonic speech-to-speech model to generate with. Omit it to use the current default model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phonic_model: Option<UpdateAgentRequestPhonicModel>,
     /// These words, or short phrases, will be more accurately recognized by the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub boosted_keywords: Option<Vec<String>>,
@@ -149,15 +161,21 @@ pub struct UpdateAgentRequest {
     #[serde(default)]
     #[serde(with = "crate::core::number_serializers::option")]
     pub vad_threshold: Option<f64>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the agent generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// Array of MCP server IDs to make available to the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcp_server_ids: Option<Vec<String>>,
     /// Names of observability integrations to enable for the agent. Each must be one of the supported providers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability_integrations: Option<Vec<String>>,
+    /// Name of an external storage policy in the same project that conversation artifacts are delivered to. Set to `null` to stop delivering artifacts. Requires zero data retention and cannot be combined with `enable_redaction`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_storage_policy: Option<String>,
     /// The name of the project containing the agent. Only used when `nameOrId` is a name.
     #[serde(skip)]
     pub project: Option<String>,
@@ -186,10 +204,13 @@ pub struct UpdateAgentRequestBuilder {
     generate_welcome_message: Option<bool>,
     is_welcome_message_interruptible: Option<bool>,
     websocket_timeout_sec: Option<i64>,
+    listen_only_inbound_enabled: Option<bool>,
+    listen_only_inbound_message: Option<String>,
     welcome_message: Option<String>,
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, UpdateAgentRequestTemplateVariablesValue>>,
     tools: Option<Vec<UpdateAgentRequestToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -207,6 +228,7 @@ pub struct UpdateAgentRequestBuilder {
     multilingual_mode: Option<UpdateAgentRequestMultilingualMode>,
     push_to_talk: Option<bool>,
     intelligence_level: Option<UpdateAgentRequestIntelligenceLevel>,
+    phonic_model: Option<UpdateAgentRequestPhonicModel>,
     boosted_keywords: Option<Vec<String>>,
     pronunciation_dictionary: Option<Vec<UpdateAgentRequestPronunciationDictionaryItem>>,
     min_words_to_interrupt: Option<i64>,
@@ -218,8 +240,10 @@ pub struct UpdateAgentRequestBuilder {
     vad_min_silence_duration_ms: Option<i64>,
     vad_threshold: Option<f64>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     mcp_server_ids: Option<Vec<String>>,
     observability_integrations: Option<Vec<String>>,
+    external_storage_policy: Option<String>,
     project: Option<String>,
 }
 
@@ -294,6 +318,16 @@ impl UpdateAgentRequestBuilder {
         self
     }
 
+    pub fn listen_only_inbound_enabled(mut self, value: bool) -> Self {
+        self.listen_only_inbound_enabled = Some(value);
+        self
+    }
+
+    pub fn listen_only_inbound_message(mut self, value: impl Into<String>) -> Self {
+        self.listen_only_inbound_message = Some(value.into());
+        self
+    }
+
     pub fn welcome_message(mut self, value: impl Into<String>) -> Self {
         self.welcome_message = Some(value.into());
         self
@@ -311,6 +345,11 @@ impl UpdateAgentRequestBuilder {
 
     pub fn tools(mut self, value: Vec<UpdateAgentRequestToolsItem>) -> Self {
         self.tools = Some(value);
+        self
+    }
+
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
         self
     }
 
@@ -399,6 +438,11 @@ impl UpdateAgentRequestBuilder {
         self
     }
 
+    pub fn phonic_model(mut self, value: UpdateAgentRequestPhonicModel) -> Self {
+        self.phonic_model = Some(value);
+        self
+    }
+
     pub fn boosted_keywords(mut self, value: Vec<String>) -> Self {
         self.boosted_keywords = Some(value);
         self
@@ -454,6 +498,11 @@ impl UpdateAgentRequestBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn mcp_server_ids(mut self, value: Vec<String>) -> Self {
         self.mcp_server_ids = Some(value);
         self
@@ -461,6 +510,11 @@ impl UpdateAgentRequestBuilder {
 
     pub fn observability_integrations(mut self, value: Vec<String>) -> Self {
         self.observability_integrations = Some(value);
+        self
+    }
+
+    pub fn external_storage_policy(mut self, value: impl Into<String>) -> Self {
+        self.external_storage_policy = Some(value.into());
         self
     }
 
@@ -486,10 +540,13 @@ impl UpdateAgentRequestBuilder {
             generate_welcome_message: self.generate_welcome_message,
             is_welcome_message_interruptible: self.is_welcome_message_interruptible,
             websocket_timeout_sec: self.websocket_timeout_sec,
+            listen_only_inbound_enabled: self.listen_only_inbound_enabled,
+            listen_only_inbound_message: self.listen_only_inbound_message,
             welcome_message: self.welcome_message,
             system_prompt: self.system_prompt,
             template_variables: self.template_variables,
             tools: self.tools,
+            built_in_tool_configs: self.built_in_tool_configs,
             tasks: self.tasks,
             generate_no_input_poke_text: self.generate_no_input_poke_text,
             no_input_poke_sec: self.no_input_poke_sec,
@@ -507,6 +564,7 @@ impl UpdateAgentRequestBuilder {
             multilingual_mode: self.multilingual_mode,
             push_to_talk: self.push_to_talk,
             intelligence_level: self.intelligence_level,
+            phonic_model: self.phonic_model,
             boosted_keywords: self.boosted_keywords,
             pronunciation_dictionary: self.pronunciation_dictionary,
             min_words_to_interrupt: self.min_words_to_interrupt,
@@ -518,8 +576,10 @@ impl UpdateAgentRequestBuilder {
             vad_min_silence_duration_ms: self.vad_min_silence_duration_ms,
             vad_threshold: self.vad_threshold,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             mcp_server_ids: self.mcp_server_ids,
             observability_integrations: self.observability_integrations,
+            external_storage_policy: self.external_storage_policy,
             project: self.project,
         })
     }

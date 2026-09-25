@@ -57,6 +57,7 @@ pub fn client(ctx: &AppContext) -> phonic_sdk::api::ApiClient {
         config,
         agents: phonic_sdk::api::AgentsClient { http_client: http_client.clone() },
         tools: phonic_sdk::api::ToolsClient { http_client: http_client.clone() },
+        external_storage_policies: phonic_sdk::api::ExternalStoragePoliciesClient { http_client: http_client.clone() },
         extraction_schemas: phonic_sdk::api::ExtractionSchemasClient { http_client: http_client.clone() },
         voices: phonic_sdk::api::VoicesClient { http_client: http_client.clone() },
         workspace: phonic_sdk::api::WorkspaceClient { http_client: http_client.clone() },
@@ -66,6 +67,7 @@ pub fn client(ctx: &AppContext) -> phonic_sdk::api::ApiClient {
         auth: phonic_sdk::api::AuthClient { http_client: http_client.clone() },
         tts: phonic_sdk::api::TtsClient { http_client: http_client.clone() },
         projects: phonic_sdk::api::ProjectsClient { http_client: http_client.clone() },
+        responses: phonic_sdk::api::ResponsesClient { http_client: http_client.clone() },
     }
 }
 

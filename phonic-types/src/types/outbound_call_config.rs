@@ -59,6 +59,9 @@ pub struct OutboundCallConfig {
     /// The intelligence level of the agent. `high` uses a more capable model for more complex reasoning, while `standard` is optimized for lower latency.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub intelligence_level: Option<OutboundCallConfigIntelligenceLevel>,
+    /// The Phonic speech-to-speech model to generate with. Omit it to use the current default model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phonic_model: Option<OutboundCallConfigPhonicModel>,
     /// These words, or short phrases, will be more accurately recognized by the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub boosted_keywords: Option<Vec<String>>,
@@ -71,9 +74,12 @@ pub struct OutboundCallConfig {
     /// Array of built-in or custom tool names to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<OutboundCallConfigToolsItem>>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the agent generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// The speech-to-speech model to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
@@ -110,6 +116,9 @@ pub struct OutboundCallConfig {
     /// When not `null`, at the beginning of the conversation the agent will make a POST request to this endpoint to get configuration options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_endpoint: Option<OutboundCallConfigConfigurationEndpoint>,
+    /// Additional runtime parameters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_params: Option<HashMap<String, serde_json::Value>>,
     /// Controls how long transcripts and audio recordings are retained before deletion.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_retention_policy: Option<DataRetentionPolicy>,
@@ -142,11 +151,13 @@ pub struct OutboundCallConfigBuilder {
     multilingual_mode: Option<OutboundCallConfigMultilingualMode>,
     push_to_talk: Option<bool>,
     intelligence_level: Option<OutboundCallConfigIntelligenceLevel>,
+    phonic_model: Option<OutboundCallConfigPhonicModel>,
     boosted_keywords: Option<Vec<String>>,
     pronunciation_dictionary: Option<Vec<OutboundCallConfigPronunciationDictionaryItem>>,
     min_words_to_interrupt: Option<i64>,
     tools: Option<Vec<OutboundCallConfigToolsItem>>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     model: Option<String>,
     audio_speed: Option<f64>,
     background_noise: Option<OutboundCallConfigBackgroundNoise>,
@@ -157,6 +168,7 @@ pub struct OutboundCallConfigBuilder {
     enable_assistant_backchannel: Option<bool>,
     assistant_backchannel_aggressiveness: Option<f64>,
     configuration_endpoint: Option<OutboundCallConfigConfigurationEndpoint>,
+    additional_params: Option<HashMap<String, serde_json::Value>>,
     data_retention_policy: Option<DataRetentionPolicy>,
 }
 
@@ -251,6 +263,11 @@ impl OutboundCallConfigBuilder {
         self
     }
 
+    pub fn phonic_model(mut self, value: OutboundCallConfigPhonicModel) -> Self {
+        self.phonic_model = Some(value);
+        self
+    }
+
     pub fn boosted_keywords(mut self, value: Vec<String>) -> Self {
         self.boosted_keywords = Some(value);
         self
@@ -273,6 +290,11 @@ impl OutboundCallConfigBuilder {
 
     pub fn enable_redaction(mut self, value: bool) -> Self {
         self.enable_redaction = Some(value);
+        self
+    }
+
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
         self
     }
 
@@ -326,6 +348,11 @@ impl OutboundCallConfigBuilder {
         self
     }
 
+    pub fn additional_params(mut self, value: HashMap<String, serde_json::Value>) -> Self {
+        self.additional_params = Some(value);
+        self
+    }
+
     pub fn data_retention_policy(mut self, value: DataRetentionPolicy) -> Self {
         self.data_retention_policy = Some(value);
         self
@@ -352,11 +379,13 @@ impl OutboundCallConfigBuilder {
             multilingual_mode: self.multilingual_mode,
             push_to_talk: self.push_to_talk,
             intelligence_level: self.intelligence_level,
+            phonic_model: self.phonic_model,
             boosted_keywords: self.boosted_keywords,
             pronunciation_dictionary: self.pronunciation_dictionary,
             min_words_to_interrupt: self.min_words_to_interrupt,
             tools: self.tools,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             model: self.model,
             audio_speed: self.audio_speed,
             background_noise: self.background_noise,
@@ -367,6 +396,7 @@ impl OutboundCallConfigBuilder {
             enable_assistant_backchannel: self.enable_assistant_backchannel,
             assistant_backchannel_aggressiveness: self.assistant_backchannel_aggressiveness,
             configuration_endpoint: self.configuration_endpoint,
+            additional_params: self.additional_params,
             data_retention_policy: self.data_retention_policy,
         })
     }

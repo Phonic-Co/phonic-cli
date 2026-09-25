@@ -47,6 +47,12 @@ pub struct Agent {
     /// Number of seconds of inactivity before the conversation WebSocket is closed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub websocket_timeout_sec: Option<i64>,
+    /// Play an uninterruptible welcome message on incoming calls, then transcribe the caller without responding. Silence timeout and call duration limits still apply.
+    #[serde(default)]
+    pub listen_only_inbound_enabled: bool,
+    /// Welcome message for listen-only incoming calls. Can contain template variables like `{{customer_name}}`. Must be nonempty when `listen_only_inbound_enabled` is `true`. Replaces `welcome_message` for these calls, regardless of `generate_welcome_message`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub listen_only_inbound_message: Option<String>,
     /// Message to play when the conversation starts. Ignored when `generate_welcome_message` is `true`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub welcome_message: Option<String>,
@@ -59,6 +65,9 @@ pub struct Agent {
     /// List of tools available to the agent.
     #[serde(default)]
     pub tools: Vec<AgentToolsItem>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID.
+    #[serde(default)]
+    pub built_in_tool_configs: BuiltInToolConfigs,
     /// Tasks for the agent to complete during the conversation.
     #[serde(default)]
     pub tasks: Vec<Task>,
@@ -89,12 +98,18 @@ pub struct Agent {
     pub push_to_talk: bool,
     /// The intelligence level of the agent. `high` uses a more capable model for more complex reasoning, while `standard` is optimized for lower latency.
     pub intelligence_level: AgentIntelligenceLevel,
+    /// The Phonic speech-to-speech model to generate with. Omit it to use the current default model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phonic_model: Option<AgentPhonicModel>,
     /// These words, or short phrases, will be more accurately recognized by the agent.
     #[serde(default)]
     pub boosted_keywords: Vec<String>,
     /// Names of observability integrations enabled for the agent. Each must be one of the supported providers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability_integrations: Option<Vec<String>>,
+    /// Name of the external storage policy that conversation artifacts are delivered to. `null` when the agent doesn't deliver artifacts to external storage.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_storage_policy: Option<String>,
     /// Array of `{ word, pronunciation }` entries. Words must be unique.
     #[serde(default)]
     pub pronunciation_dictionary: Vec<AgentPronunciationDictionaryItem>,
@@ -126,9 +141,12 @@ pub struct Agent {
     #[serde(default)]
     #[serde(with = "crate::core::number_serializers::option")]
     pub vad_threshold: Option<f64>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the agent generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// The URL-friendly slug of the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slug: Option<String>,
@@ -145,6 +163,9 @@ pub struct Agent {
     pub integrations: Option<Vec<AgentIntegration>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_retention_policy: Option<DataRetentionPolicy>,
+    /// When `true`, the agent is disabled. A disabled agent cannot start conversations or be updated, except to release its phone numbers.
+    #[serde(default)]
+    pub is_disabled: bool,
 }
 
 impl Agent {
@@ -170,10 +191,13 @@ pub struct AgentBuilder {
     generate_welcome_message: Option<bool>,
     is_welcome_message_interruptible: Option<bool>,
     websocket_timeout_sec: Option<i64>,
+    listen_only_inbound_enabled: Option<bool>,
+    listen_only_inbound_message: Option<String>,
     welcome_message: Option<String>,
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, AgentTemplateVariablesValue>>,
     tools: Option<Vec<AgentToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -185,8 +209,10 @@ pub struct AgentBuilder {
     multilingual_mode: Option<AgentMultilingualMode>,
     push_to_talk: Option<bool>,
     intelligence_level: Option<AgentIntelligenceLevel>,
+    phonic_model: Option<AgentPhonicModel>,
     boosted_keywords: Option<Vec<String>>,
     observability_integrations: Option<Vec<String>>,
+    external_storage_policy: Option<String>,
     pronunciation_dictionary: Option<Vec<AgentPronunciationDictionaryItem>>,
     min_words_to_interrupt: Option<i64>,
     configuration_endpoint: Option<AgentConfigurationEndpoint>,
@@ -197,11 +223,13 @@ pub struct AgentBuilder {
     vad_min_silence_duration_ms: Option<i64>,
     vad_threshold: Option<f64>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     slug: Option<String>,
     enable_assistant_backchannel: Option<bool>,
     assistant_backchannel_aggressiveness: Option<f64>,
     integrations: Option<Vec<AgentIntegration>>,
     data_retention_policy: Option<DataRetentionPolicy>,
+    is_disabled: Option<bool>,
 }
 
 impl AgentBuilder {
@@ -275,6 +303,16 @@ impl AgentBuilder {
         self
     }
 
+    pub fn listen_only_inbound_enabled(mut self, value: bool) -> Self {
+        self.listen_only_inbound_enabled = Some(value);
+        self
+    }
+
+    pub fn listen_only_inbound_message(mut self, value: impl Into<String>) -> Self {
+        self.listen_only_inbound_message = Some(value.into());
+        self
+    }
+
     pub fn welcome_message(mut self, value: impl Into<String>) -> Self {
         self.welcome_message = Some(value.into());
         self
@@ -292,6 +330,11 @@ impl AgentBuilder {
 
     pub fn tools(mut self, value: Vec<AgentToolsItem>) -> Self {
         self.tools = Some(value);
+        self
+    }
+
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
         self
     }
 
@@ -350,6 +393,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn phonic_model(mut self, value: AgentPhonicModel) -> Self {
+        self.phonic_model = Some(value);
+        self
+    }
+
     pub fn boosted_keywords(mut self, value: Vec<String>) -> Self {
         self.boosted_keywords = Some(value);
         self
@@ -357,6 +405,11 @@ impl AgentBuilder {
 
     pub fn observability_integrations(mut self, value: Vec<String>) -> Self {
         self.observability_integrations = Some(value);
+        self
+    }
+
+    pub fn external_storage_policy(mut self, value: impl Into<String>) -> Self {
+        self.external_storage_policy = Some(value.into());
         self
     }
 
@@ -410,6 +463,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn slug(mut self, value: impl Into<String>) -> Self {
         self.slug = Some(value.into());
         self
@@ -435,6 +493,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn is_disabled(mut self, value: bool) -> Self {
+        self.is_disabled = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`Agent`].
     /// This method will fail if any of the following fields are not set:
     /// - [`id`](AgentBuilder::id)
@@ -448,9 +511,11 @@ impl AgentBuilder {
     /// - [`background_noise_level`](AgentBuilder::background_noise_level)
     /// - [`generate_welcome_message`](AgentBuilder::generate_welcome_message)
     /// - [`is_welcome_message_interruptible`](AgentBuilder::is_welcome_message_interruptible)
+    /// - [`listen_only_inbound_enabled`](AgentBuilder::listen_only_inbound_enabled)
     /// - [`system_prompt`](AgentBuilder::system_prompt)
     /// - [`template_variables`](AgentBuilder::template_variables)
     /// - [`tools`](AgentBuilder::tools)
+    /// - [`built_in_tool_configs`](AgentBuilder::built_in_tool_configs)
     /// - [`tasks`](AgentBuilder::tasks)
     /// - [`generate_no_input_poke_text`](AgentBuilder::generate_no_input_poke_text)
     /// - [`no_input_poke_text`](AgentBuilder::no_input_poke_text)
@@ -463,6 +528,7 @@ impl AgentBuilder {
     /// - [`boosted_keywords`](AgentBuilder::boosted_keywords)
     /// - [`pronunciation_dictionary`](AgentBuilder::pronunciation_dictionary)
     /// - [`min_words_to_interrupt`](AgentBuilder::min_words_to_interrupt)
+    /// - [`is_disabled`](AgentBuilder::is_disabled)
     pub fn build(self) -> Result<Agent, BuildError> {
         Ok(Agent {
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
@@ -479,10 +545,13 @@ impl AgentBuilder {
             generate_welcome_message: self.generate_welcome_message.ok_or_else(|| BuildError::missing_field("generate_welcome_message"))?,
             is_welcome_message_interruptible: self.is_welcome_message_interruptible.ok_or_else(|| BuildError::missing_field("is_welcome_message_interruptible"))?,
             websocket_timeout_sec: self.websocket_timeout_sec,
+            listen_only_inbound_enabled: self.listen_only_inbound_enabled.ok_or_else(|| BuildError::missing_field("listen_only_inbound_enabled"))?,
+            listen_only_inbound_message: self.listen_only_inbound_message,
             welcome_message: self.welcome_message,
             system_prompt: self.system_prompt.ok_or_else(|| BuildError::missing_field("system_prompt"))?,
             template_variables: self.template_variables.ok_or_else(|| BuildError::missing_field("template_variables"))?,
             tools: self.tools.ok_or_else(|| BuildError::missing_field("tools"))?,
+            built_in_tool_configs: self.built_in_tool_configs.ok_or_else(|| BuildError::missing_field("built_in_tool_configs"))?,
             tasks: self.tasks.ok_or_else(|| BuildError::missing_field("tasks"))?,
             generate_no_input_poke_text: self.generate_no_input_poke_text.ok_or_else(|| BuildError::missing_field("generate_no_input_poke_text"))?,
             no_input_poke_sec: self.no_input_poke_sec,
@@ -494,8 +563,10 @@ impl AgentBuilder {
             multilingual_mode: self.multilingual_mode.ok_or_else(|| BuildError::missing_field("multilingual_mode"))?,
             push_to_talk: self.push_to_talk.ok_or_else(|| BuildError::missing_field("push_to_talk"))?,
             intelligence_level: self.intelligence_level.ok_or_else(|| BuildError::missing_field("intelligence_level"))?,
+            phonic_model: self.phonic_model,
             boosted_keywords: self.boosted_keywords.ok_or_else(|| BuildError::missing_field("boosted_keywords"))?,
             observability_integrations: self.observability_integrations,
+            external_storage_policy: self.external_storage_policy,
             pronunciation_dictionary: self.pronunciation_dictionary.ok_or_else(|| BuildError::missing_field("pronunciation_dictionary"))?,
             min_words_to_interrupt: self.min_words_to_interrupt.ok_or_else(|| BuildError::missing_field("min_words_to_interrupt"))?,
             configuration_endpoint: self.configuration_endpoint,
@@ -506,11 +577,13 @@ impl AgentBuilder {
             vad_min_silence_duration_ms: self.vad_min_silence_duration_ms,
             vad_threshold: self.vad_threshold,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             slug: self.slug,
             enable_assistant_backchannel: self.enable_assistant_backchannel,
             assistant_backchannel_aggressiveness: self.assistant_backchannel_aggressiveness,
             integrations: self.integrations,
             data_retention_policy: self.data_retention_policy,
+            is_disabled: self.is_disabled.ok_or_else(|| BuildError::missing_field("is_disabled"))?,
         })
     }
 }

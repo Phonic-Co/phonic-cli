@@ -80,4 +80,36 @@ impl VoicesClient {
             )
             .await
     }
+
+    /// Generates speech audio for the provided text and returns it as a single base64-encoded string.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    pub async fn preview(
+        &self,
+        request: &StreamTtsRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<TtsResponse, ApiError> {
+        let base_url = self
+            .http_client
+            .config()
+            .environment
+            .as_ref()
+            .map_or(self.http_client.base_url(), |env| env.base_url());
+        self.http_client
+            .execute_request_with_base_url(
+                base_url,
+                Method::POST,
+                "tts",
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                None,
+                options,
+            )
+            .await
+    }
 }
