@@ -30,6 +30,9 @@ pub struct Conversation {
     /// When `false`, the welcome message will not be interruptible by the user.
     #[serde(default)]
     pub is_welcome_message_interruptible: bool,
+    /// Whether this conversation used listen-only mode. The resolved greeting is stored in `welcome_message`.
+    #[serde(default)]
+    pub listen_only: bool,
     /// Welcome message played at start. Will be `null` when `generate_welcome_message` is `true`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub welcome_message: Option<String>,
@@ -150,6 +153,9 @@ pub struct Conversation {
     /// Arbitrary metadata associated with the conversation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<HashMap<String, serde_json::Value>>,
+    /// Whether an inaudible watermark was embedded in the audio the agent generated during the conversation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// Controls how long transcripts and audio recordings are retained before deletion.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_retention_policy: Option<DataRetentionPolicy>,
@@ -182,6 +188,7 @@ pub struct ConversationBuilder {
     model: Option<String>,
     generate_welcome_message: Option<bool>,
     is_welcome_message_interruptible: Option<bool>,
+    listen_only: Option<bool>,
     welcome_message: Option<String>,
     template_variables: Option<HashMap<String, String>>,
     system_prompt: Option<String>,
@@ -220,6 +227,7 @@ pub struct ConversationBuilder {
     is_redacted: Option<bool>,
     redacted_transcript: Option<String>,
     metadata: Option<HashMap<String, serde_json::Value>>,
+    enable_watermarking: Option<bool>,
     data_retention_policy: Option<DataRetentionPolicy>,
     deletion_info: Option<ConversationDeletionInfo>,
     enable_assistant_backchannel: Option<bool>,
@@ -269,6 +277,11 @@ impl ConversationBuilder {
 
     pub fn is_welcome_message_interruptible(mut self, value: bool) -> Self {
         self.is_welcome_message_interruptible = Some(value);
+        self
+    }
+
+    pub fn listen_only(mut self, value: bool) -> Self {
+        self.listen_only = Some(value);
         self
     }
 
@@ -462,6 +475,11 @@ impl ConversationBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn data_retention_policy(mut self, value: DataRetentionPolicy) -> Self {
         self.data_retention_policy = Some(value);
         self
@@ -491,6 +509,7 @@ impl ConversationBuilder {
     /// - [`model`](ConversationBuilder::model)
     /// - [`generate_welcome_message`](ConversationBuilder::generate_welcome_message)
     /// - [`is_welcome_message_interruptible`](ConversationBuilder::is_welcome_message_interruptible)
+    /// - [`listen_only`](ConversationBuilder::listen_only)
     /// - [`template_variables`](ConversationBuilder::template_variables)
     /// - [`input_format`](ConversationBuilder::input_format)
     /// - [`output_format`](ConversationBuilder::output_format)
@@ -515,6 +534,7 @@ impl ConversationBuilder {
             model: self.model.ok_or_else(|| BuildError::missing_field("model"))?,
             generate_welcome_message: self.generate_welcome_message.ok_or_else(|| BuildError::missing_field("generate_welcome_message"))?,
             is_welcome_message_interruptible: self.is_welcome_message_interruptible.ok_or_else(|| BuildError::missing_field("is_welcome_message_interruptible"))?,
+            listen_only: self.listen_only.ok_or_else(|| BuildError::missing_field("listen_only"))?,
             welcome_message: self.welcome_message,
             template_variables: self.template_variables.ok_or_else(|| BuildError::missing_field("template_variables"))?,
             system_prompt: self.system_prompt,
@@ -553,6 +573,7 @@ impl ConversationBuilder {
             is_redacted: self.is_redacted,
             redacted_transcript: self.redacted_transcript,
             metadata: self.metadata,
+            enable_watermarking: self.enable_watermarking,
             data_retention_policy: self.data_retention_policy,
             deletion_info: self.deletion_info,
             enable_assistant_backchannel: self.enable_assistant_backchannel,
