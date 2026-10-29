@@ -11,8 +11,8 @@ pub mod resources;
 
 pub use resources::{
     AgentsClient, ApiClient, ApiKeysClient, AuthClient, ConversationItemsClient,
-    ConversationsClient, ExtractionSchemasClient, ProjectsClient, ToolsClient, TtsClient,
-    VoicesClient, WorkspaceClient,
+    ConversationsClient, ExternalStoragePoliciesClient, ExtractionSchemasClient, ProjectsClient,
+    ResponsesClient, ToolsClient, TtsClient, VoicesClient, WorkspaceClient,
 };
 
 pub use phonic_types::*;

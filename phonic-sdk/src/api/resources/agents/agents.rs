@@ -339,4 +339,78 @@ impl AgentsClient {
             )
             .await
     }
+
+    /// Disables an agent by name or ID. A disabled agent cannot start conversations or be updated, except to release its phone numbers.
+    ///
+    /// # Arguments
+    ///
+    /// * `name_or_id` - The name or the ID of the agent.
+    /// * `project` - The name of the project containing the agent. Only used when `nameOrId` is a name.
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    pub async fn disable(
+        &self,
+        name_or_id: &str,
+        request: &DisableQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<AgentsDisableResponse, ApiError> {
+        let base_url = self
+            .http_client
+            .config()
+            .environment
+            .as_ref()
+            .map_or(self.http_client.base_url(), |env| env.base_url());
+        self.http_client
+            .execute_request_with_base_url(
+                base_url,
+                Method::POST,
+                &format!("agents/{}/disable", name_or_id),
+                None,
+                QueryBuilder::new()
+                    .string("project", request.project.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Enables a previously disabled agent by name or ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `name_or_id` - The name or the ID of the agent.
+    /// * `project` - The name of the project containing the agent. Only used when `nameOrId` is a name.
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    pub async fn enable(
+        &self,
+        name_or_id: &str,
+        request: &EnableQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<AgentsEnableResponse, ApiError> {
+        let base_url = self
+            .http_client
+            .config()
+            .environment
+            .as_ref()
+            .map_or(self.http_client.base_url(), |env| env.base_url());
+        self.http_client
+            .execute_request_with_base_url(
+                base_url,
+                Method::POST,
+                &format!("agents/{}/enable", name_or_id),
+                None,
+                QueryBuilder::new()
+                    .string("project", request.project.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
 }

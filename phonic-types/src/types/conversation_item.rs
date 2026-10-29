@@ -40,9 +40,9 @@ pub struct ConversationItem {
     /// System prompt used for this assistant turn.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system_prompt: Option<String>,
-    /// Tool calls made by the assistant.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_calls: Option<Vec<ConversationItemToolCallsItem>>,
+    /// Tool calls made during this turn. Tool calls made while the user is still speaking are attached to the user's turn.
+    #[serde(default)]
+    pub tool_calls: Vec<ConversationItemToolCallsItem>,
 }
 
 impl ConversationItem {
@@ -136,6 +136,7 @@ impl ConversationItemBuilder {
     /// - [`role`](ConversationItemBuilder::role)
     /// - [`duration_ms`](ConversationItemBuilder::duration_ms)
     /// - [`started_at`](ConversationItemBuilder::started_at)
+    /// - [`tool_calls`](ConversationItemBuilder::tool_calls)
     pub fn build(self) -> Result<ConversationItem, BuildError> {
         Ok(ConversationItem {
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
@@ -149,7 +150,7 @@ impl ConversationItemBuilder {
             voice_id: self.voice_id,
             audio_speed: self.audio_speed,
             system_prompt: self.system_prompt,
-            tool_calls: self.tool_calls,
+            tool_calls: self.tool_calls.ok_or_else(|| BuildError::missing_field("tool_calls"))?,
         })
     }
 }
