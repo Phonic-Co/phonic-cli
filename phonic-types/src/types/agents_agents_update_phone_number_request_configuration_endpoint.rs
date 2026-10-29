@@ -5,7 +5,7 @@ use super::*;
 /// When not `null`, the agent will call this endpoint to get configuration options for calls on this phone number.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct AgentsUpdatePhoneNumberRequestConfigurationEndpoint {
-    /// URL to call
+    /// URL to call. Must be a publicly routable HTTPS URL without embedded credentials.
     #[serde(default)]
     pub url: String,
     /// Object of key-value pairs.
