@@ -3,10 +3,11 @@ pub use crate::prelude::*;
 use super::*;
 
 /// Query parameters for list
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct VoicesListQueryRequest {
-    /// The model to get voices for.
-    pub model: String,
+    /// Ignored. This parameter is deprecated and can be omitted.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 impl VoicesListQueryRequest {
@@ -28,11 +29,9 @@ impl VoicesListQueryRequestBuilder {
     }
 
     /// Consumes the builder and constructs a [`VoicesListQueryRequest`].
-    /// This method will fail if any of the following fields are not set:
-    /// - [`model`](VoicesListQueryRequestBuilder::model)
     pub fn build(self) -> Result<VoicesListQueryRequest, BuildError> {
         Ok(VoicesListQueryRequest {
-            model: self.model.ok_or_else(|| BuildError::missing_field("model"))?,
+            model: self.model,
         })
     }
 }

@@ -368,7 +368,7 @@ impl ConversationsClient {
             .await
     }
 
-    /// Initiates a SIP outbound call using user-supplied SIP credentials in headers.
+    /// Places an outbound voice-agent phone call through the user's SIP trunk using the supplied SIP credentials, caller ID, destination phone number, and conversation configuration. Use only when the user requests a call to that recipient and is authorized to use the trunk and caller ID. With `dry_run` omitted or false, this contacts the recipient and may incur telephony charges; repeating a successful request may place another call. Set `dry_run` to true to validate setup without placing a call. A dry run does not verify that the recipient can be reached or test call audio.
     ///
     /// # Arguments
     ///

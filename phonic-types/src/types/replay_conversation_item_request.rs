@@ -4,9 +4,9 @@ use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct ReplayConversationItemRequest {
-    /// The system prompt to use when generating replay responses. Use this to test prompt changes against this conversation turn.
-    #[serde(default)]
-    pub system_prompt: String,
+    /// The system prompt to use when generating replay responses. Use this to test prompt changes against this conversation turn. Omit it to replay the turn with the system prompt it originally ran with.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
     /// Number of alternative responses to generate.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub num_responses: Option<i64>,
@@ -37,11 +37,9 @@ impl ReplayConversationItemRequestBuilder {
     }
 
     /// Consumes the builder and constructs a [`ReplayConversationItemRequest`].
-    /// This method will fail if any of the following fields are not set:
-    /// - [`system_prompt`](ReplayConversationItemRequestBuilder::system_prompt)
     pub fn build(self) -> Result<ReplayConversationItemRequest, BuildError> {
         Ok(ReplayConversationItemRequest {
-            system_prompt: self.system_prompt.ok_or_else(|| BuildError::missing_field("system_prompt"))?,
+            system_prompt: self.system_prompt,
             num_responses: self.num_responses,
         })
     }

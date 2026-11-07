@@ -25,6 +25,9 @@ pub struct CreateAgentRequest {
     /// The voice ID to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voice_id: Option<String>,
+    /// Additional voice IDs that, together with `voice_id`, form the agent's voice set. Each conversation is assigned one voice from the set, chosen at random with equal probability. Must not include `voice_id` and must not contain duplicates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_voice_ids: Option<Vec<String>>,
     /// The audio format of the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub audio_format: Option<CreateAgentRequestAudioFormat>,
@@ -50,6 +53,12 @@ pub struct CreateAgentRequest {
     /// Number of seconds of inactivity before the conversation WebSocket is closed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub websocket_timeout_sec: Option<i64>,
+    /// Play an uninterruptible welcome message on incoming calls, then transcribe the caller without responding. Silence timeout and call duration limits still apply.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub listen_only_inbound_enabled: Option<bool>,
+    /// Welcome message for listen-only incoming calls. Can contain template variables like `{{customer_name}}`. Must be nonempty when `listen_only_inbound_enabled` is `true`. Replaces `welcome_message` for these calls, regardless of `generate_welcome_message`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub listen_only_inbound_message: Option<String>,
     /// Message to play when the conversation starts. Can contain template variables like `{{customer_name}}`. Ignored when `generate_welcome_message` is `true`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub welcome_message: Option<String>,
@@ -62,6 +71,9 @@ pub struct CreateAgentRequest {
     /// Array of built-in or custom tool names to use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<CreateAgentRequestToolsItem>>,
+    /// Configuration overrides for built-in tools, keyed by built-in tool ID. Built-in tools not listed here use their default configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub built_in_tool_configs: Option<BuiltInToolConfigs>,
     /// Array of task objects with `name` and `description` fields.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<Task>>,
@@ -106,6 +118,12 @@ pub struct CreateAgentRequest {
     /// The intelligence level of the agent. `high` uses a more capable model for more complex reasoning, while `standard` is optimized for lower latency.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub intelligence_level: Option<CreateAgentRequestIntelligenceLevel>,
+    /// The Phonic speech-to-speech model to generate with. Omit it to use the current default model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<CreateAgentRequestModel>,
+    /// The Phonic speech-to-speech model to generate with. This field is deprecated. Use `model` instead.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phonic_model: Option<CreateAgentRequestPhonicModel>,
     /// These words, or short phrases, will be more accurately recognized by the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub boosted_keywords: Option<Vec<String>>,
@@ -115,6 +133,12 @@ pub struct CreateAgentRequest {
     /// Minimum number of words required to interrupt the assistant.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_words_to_interrupt: Option<i64>,
+    /// How long the agent waits after the user stops speaking before taking its turn. `"eager"` responds fastest; `"very_patient"` waits the longest.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub turn_taking: Option<CreateAgentRequestTurnTaking>,
+    /// Maximum duration of a conversation in seconds. When the limit is reached, the conversation is ended.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_conversation_duration_sec: Option<i64>,
     /// When not `null`, at the beginning of the conversation the agent will make a POST request to this endpoint to get configuration options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_endpoint: Option<CreateAgentRequestConfigurationEndpoint>,
@@ -126,29 +150,35 @@ pub struct CreateAgentRequest {
     /// E.164 formatted phone number where non-agent calls will be forwarded. Required when `inbound_rollout < 1.0`, must be `null` when `inbound_rollout = 1.0`. Defaults to `null`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inbound_rollout_forward_phone_number: Option<String>,
-    /// Voice activity detection prebuffer duration in milliseconds.
+    /// Voice activity detection prebuffer duration in milliseconds. Deprecated. Stored on the agent but ignored at runtime. Use `turn_taking`, or send VAD settings in the conversation config instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vad_prebuffer_duration_ms: Option<i64>,
-    /// Minimum speech duration for voice activity detection in milliseconds.
+    /// Minimum speech duration for voice activity detection in milliseconds. Deprecated. Stored on the agent but ignored at runtime. Use `turn_taking`, or send VAD settings in the conversation config instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vad_min_speech_duration_ms: Option<i64>,
-    /// Minimum silence duration for voice activity detection in milliseconds.
+    /// Minimum silence duration for voice activity detection in milliseconds. Deprecated. Stored on the agent but ignored at runtime. Use `turn_taking`, or send VAD settings in the conversation config instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vad_min_silence_duration_ms: Option<i64>,
-    /// Voice activity detection threshold.
+    /// Voice activity detection threshold. Deprecated. Stored on the agent but ignored at runtime. Use `turn_taking`, or send VAD settings in the conversation config instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     #[serde(with = "crate::core::number_serializers::option")]
     pub vad_threshold: Option<f64>,
-    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE NUMBER]`) and bleeped from audio recordings after the conversation ends.
+    /// When `true`, PII and PHI are redacted from text transcripts (e.g. replaced with tags like `[PHONE]`) and bleeped from audio recordings after the conversation ends.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_redaction: Option<bool>,
+    /// When `true`, an inaudible watermark is embedded in the audio the agent generates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_watermarking: Option<bool>,
     /// Array of MCP server IDs to make available to the agent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcp_server_ids: Option<Vec<String>>,
     /// Names of observability integrations to enable for the agent. Each must be one of the supported providers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub observability_integrations: Option<Vec<String>>,
+    /// Name of an external storage policy in the same project that conversation artifacts are delivered to. Requires zero data retention.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_storage_policy: Option<String>,
 }
 
 impl CreateAgentRequest {
@@ -167,6 +197,7 @@ pub struct CreateAgentRequestBuilder {
     custom_phone_numbers: Option<Vec<String>>,
     timezone: Option<String>,
     voice_id: Option<String>,
+    additional_voice_ids: Option<Vec<String>>,
     audio_format: Option<CreateAgentRequestAudioFormat>,
     audio_speed: Option<f64>,
     background_noise_level: Option<f64>,
@@ -174,10 +205,13 @@ pub struct CreateAgentRequestBuilder {
     generate_welcome_message: Option<bool>,
     is_welcome_message_interruptible: Option<bool>,
     websocket_timeout_sec: Option<i64>,
+    listen_only_inbound_enabled: Option<bool>,
+    listen_only_inbound_message: Option<String>,
     welcome_message: Option<String>,
     system_prompt: Option<String>,
     template_variables: Option<HashMap<String, CreateAgentRequestTemplateVariablesValue>>,
     tools: Option<Vec<CreateAgentRequestToolsItem>>,
+    built_in_tool_configs: Option<BuiltInToolConfigs>,
     tasks: Option<Vec<Task>>,
     generate_no_input_poke_text: Option<bool>,
     no_input_poke_sec: Option<i64>,
@@ -192,9 +226,13 @@ pub struct CreateAgentRequestBuilder {
     multilingual_mode: Option<CreateAgentRequestMultilingualMode>,
     push_to_talk: Option<bool>,
     intelligence_level: Option<CreateAgentRequestIntelligenceLevel>,
+    model: Option<CreateAgentRequestModel>,
+    phonic_model: Option<CreateAgentRequestPhonicModel>,
     boosted_keywords: Option<Vec<String>>,
     pronunciation_dictionary: Option<Vec<CreateAgentRequestPronunciationDictionaryItem>>,
     min_words_to_interrupt: Option<i64>,
+    turn_taking: Option<CreateAgentRequestTurnTaking>,
+    max_conversation_duration_sec: Option<i64>,
     configuration_endpoint: Option<CreateAgentRequestConfigurationEndpoint>,
     inbound_rollout: Option<f64>,
     inbound_rollout_forward_phone_number: Option<String>,
@@ -203,8 +241,10 @@ pub struct CreateAgentRequestBuilder {
     vad_min_silence_duration_ms: Option<i64>,
     vad_threshold: Option<f64>,
     enable_redaction: Option<bool>,
+    enable_watermarking: Option<bool>,
     mcp_server_ids: Option<Vec<String>>,
     observability_integrations: Option<Vec<String>>,
+    external_storage_policy: Option<String>,
 }
 
 impl CreateAgentRequestBuilder {
@@ -243,6 +283,11 @@ impl CreateAgentRequestBuilder {
         self
     }
 
+    pub fn additional_voice_ids(mut self, value: Vec<String>) -> Self {
+        self.additional_voice_ids = Some(value);
+        self
+    }
+
     pub fn audio_format(mut self, value: CreateAgentRequestAudioFormat) -> Self {
         self.audio_format = Some(value);
         self
@@ -278,6 +323,16 @@ impl CreateAgentRequestBuilder {
         self
     }
 
+    pub fn listen_only_inbound_enabled(mut self, value: bool) -> Self {
+        self.listen_only_inbound_enabled = Some(value);
+        self
+    }
+
+    pub fn listen_only_inbound_message(mut self, value: impl Into<String>) -> Self {
+        self.listen_only_inbound_message = Some(value.into());
+        self
+    }
+
     pub fn welcome_message(mut self, value: impl Into<String>) -> Self {
         self.welcome_message = Some(value.into());
         self
@@ -295,6 +350,11 @@ impl CreateAgentRequestBuilder {
 
     pub fn tools(mut self, value: Vec<CreateAgentRequestToolsItem>) -> Self {
         self.tools = Some(value);
+        self
+    }
+
+    pub fn built_in_tool_configs(mut self, value: BuiltInToolConfigs) -> Self {
+        self.built_in_tool_configs = Some(value);
         self
     }
 
@@ -368,6 +428,16 @@ impl CreateAgentRequestBuilder {
         self
     }
 
+    pub fn model(mut self, value: CreateAgentRequestModel) -> Self {
+        self.model = Some(value);
+        self
+    }
+
+    pub fn phonic_model(mut self, value: CreateAgentRequestPhonicModel) -> Self {
+        self.phonic_model = Some(value);
+        self
+    }
+
     pub fn boosted_keywords(mut self, value: Vec<String>) -> Self {
         self.boosted_keywords = Some(value);
         self
@@ -380,6 +450,16 @@ impl CreateAgentRequestBuilder {
 
     pub fn min_words_to_interrupt(mut self, value: i64) -> Self {
         self.min_words_to_interrupt = Some(value);
+        self
+    }
+
+    pub fn turn_taking(mut self, value: CreateAgentRequestTurnTaking) -> Self {
+        self.turn_taking = Some(value);
+        self
+    }
+
+    pub fn max_conversation_duration_sec(mut self, value: i64) -> Self {
+        self.max_conversation_duration_sec = Some(value);
         self
     }
 
@@ -423,6 +503,11 @@ impl CreateAgentRequestBuilder {
         self
     }
 
+    pub fn enable_watermarking(mut self, value: bool) -> Self {
+        self.enable_watermarking = Some(value);
+        self
+    }
+
     pub fn mcp_server_ids(mut self, value: Vec<String>) -> Self {
         self.mcp_server_ids = Some(value);
         self
@@ -430,6 +515,11 @@ impl CreateAgentRequestBuilder {
 
     pub fn observability_integrations(mut self, value: Vec<String>) -> Self {
         self.observability_integrations = Some(value);
+        self
+    }
+
+    pub fn external_storage_policy(mut self, value: impl Into<String>) -> Self {
+        self.external_storage_policy = Some(value.into());
         self
     }
 
@@ -445,6 +535,7 @@ impl CreateAgentRequestBuilder {
             custom_phone_numbers: self.custom_phone_numbers,
             timezone: self.timezone,
             voice_id: self.voice_id,
+            additional_voice_ids: self.additional_voice_ids,
             audio_format: self.audio_format,
             audio_speed: self.audio_speed,
             background_noise_level: self.background_noise_level,
@@ -452,10 +543,13 @@ impl CreateAgentRequestBuilder {
             generate_welcome_message: self.generate_welcome_message,
             is_welcome_message_interruptible: self.is_welcome_message_interruptible,
             websocket_timeout_sec: self.websocket_timeout_sec,
+            listen_only_inbound_enabled: self.listen_only_inbound_enabled,
+            listen_only_inbound_message: self.listen_only_inbound_message,
             welcome_message: self.welcome_message,
             system_prompt: self.system_prompt,
             template_variables: self.template_variables,
             tools: self.tools,
+            built_in_tool_configs: self.built_in_tool_configs,
             tasks: self.tasks,
             generate_no_input_poke_text: self.generate_no_input_poke_text,
             no_input_poke_sec: self.no_input_poke_sec,
@@ -470,9 +564,13 @@ impl CreateAgentRequestBuilder {
             multilingual_mode: self.multilingual_mode,
             push_to_talk: self.push_to_talk,
             intelligence_level: self.intelligence_level,
+            model: self.model,
+            phonic_model: self.phonic_model,
             boosted_keywords: self.boosted_keywords,
             pronunciation_dictionary: self.pronunciation_dictionary,
             min_words_to_interrupt: self.min_words_to_interrupt,
+            turn_taking: self.turn_taking,
+            max_conversation_duration_sec: self.max_conversation_duration_sec,
             configuration_endpoint: self.configuration_endpoint,
             inbound_rollout: self.inbound_rollout,
             inbound_rollout_forward_phone_number: self.inbound_rollout_forward_phone_number,
@@ -481,8 +579,10 @@ impl CreateAgentRequestBuilder {
             vad_min_silence_duration_ms: self.vad_min_silence_duration_ms,
             vad_threshold: self.vad_threshold,
             enable_redaction: self.enable_redaction,
+            enable_watermarking: self.enable_watermarking,
             mcp_server_ids: self.mcp_server_ids,
             observability_integrations: self.observability_integrations,
+            external_storage_policy: self.external_storage_policy,
         })
     }
 }

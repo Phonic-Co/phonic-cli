@@ -11,6 +11,7 @@ pub enum ToolParameterType {
     Number,
     Boolean,
     Array,
+    Enum,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -24,6 +25,7 @@ impl Serialize for ToolParameterType {
             Self::Number => serializer.serialize_str("number"),
             Self::Boolean => serializer.serialize_str("boolean"),
             Self::Array => serializer.serialize_str("array"),
+            Self::Enum => serializer.serialize_str("enum"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -38,6 +40,7 @@ impl<'de> Deserialize<'de> for ToolParameterType {
             "number" => Ok(Self::Number),
             "boolean" => Ok(Self::Boolean),
             "array" => Ok(Self::Array),
+            "enum" => Ok(Self::Enum),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -51,6 +54,7 @@ impl fmt::Display for ToolParameterType {
             Self::Number => write!(f, "number"),
             Self::Boolean => write!(f, "boolean"),
             Self::Array => write!(f, "array"),
+            Self::Enum => write!(f, "enum"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }
