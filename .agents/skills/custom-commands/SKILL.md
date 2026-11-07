@@ -67,6 +67,8 @@ with the following sub-clients:
 |-------|------|-------------|
 | `client.agents` | `phonic_sdk::api::AgentsClient` | agents operations |
 | `client.tools` | `phonic_sdk::api::ToolsClient` | tools operations |
+| `client.mcp_servers` | `phonic_sdk::api::McpServersClient` | mcp_servers operations |
+| `client.external_storage_policies` | `phonic_sdk::api::ExternalStoragePoliciesClient` | external_storage_policies operations |
 | `client.extraction_schemas` | `phonic_sdk::api::ExtractionSchemasClient` | extraction_schemas operations |
 | `client.voices` | `phonic_sdk::api::VoicesClient` | voices operations |
 | `client.workspace` | `phonic_sdk::api::WorkspaceClient` | workspace operations |
@@ -76,6 +78,7 @@ with the following sub-clients:
 | `client.auth` | `phonic_sdk::api::AuthClient` | auth operations |
 | `client.tts` | `phonic_sdk::api::TtsClient` | tts operations |
 | `client.projects` | `phonic_sdk::api::ProjectsClient` | projects operations |
+| `client.responses` | `phonic_sdk::api::ResponsesClient` | responses operations |
 
 ### 3. Key Patterns
 

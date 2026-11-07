@@ -16,8 +16,9 @@ impl ConversationItemsClient {
     /// Returns the alternative response(s) the assistant would have
     /// produced for this conversation turn given changes to the agent system prompt.
     ///
-    /// Only assistant items from ended conversations can be replayed. The
-    /// conversation must have an associated agent.
+    /// Only assistant items from ended conversations can be replayed. Omit the
+    /// request body (or omit `system_prompt`) to replay the turn exactly as it
+    /// originally ran.
     ///
     /// # Arguments
     ///
