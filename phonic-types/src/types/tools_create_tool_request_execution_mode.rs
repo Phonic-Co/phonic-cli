@@ -2,7 +2,7 @@ pub use crate::prelude::*;
 #[allow(unused_imports)]
 use super::*;
 
-/// Mode of operation.
+/// Mode of operation. Only custom_webhook and custom_websocket tools can be async; every other type must be sync. Optional for built_in_natural_conversation_ending, built_in_keypad_input, and built_in_choose_not_to_respond tools, where it defaults to sync.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CreateToolRequestExecutionMode {

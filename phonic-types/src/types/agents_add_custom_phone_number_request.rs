@@ -10,6 +10,9 @@ pub struct AgentsAddCustomPhoneNumberRequest {
     /// When not `null`, the agent will call this endpoint to get configuration options for calls on this phone number.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_endpoint: Option<AgentsAddCustomPhoneNumberRequestConfigurationEndpoint>,
+    /// SIP trunk settings for this phone number, applied to both its inbound trunk and the trunk created for each outbound call. Set at creation; remove and re-add the number to change them.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sip: Option<AgentsAddCustomPhoneNumberRequestSip>,
     /// The name of the project containing the agent. Only used when `nameOrId` is a name.
     #[serde(skip)]
     pub project: Option<String>,
@@ -26,6 +29,7 @@ impl AgentsAddCustomPhoneNumberRequest {
 pub struct AgentsAddCustomPhoneNumberRequestBuilder {
     phone_number: Option<String>,
     configuration_endpoint: Option<AgentsAddCustomPhoneNumberRequestConfigurationEndpoint>,
+    sip: Option<AgentsAddCustomPhoneNumberRequestSip>,
     project: Option<String>,
 }
 
@@ -37,6 +41,11 @@ impl AgentsAddCustomPhoneNumberRequestBuilder {
 
     pub fn configuration_endpoint(mut self, value: AgentsAddCustomPhoneNumberRequestConfigurationEndpoint) -> Self {
         self.configuration_endpoint = Some(value);
+        self
+    }
+
+    pub fn sip(mut self, value: AgentsAddCustomPhoneNumberRequestSip) -> Self {
+        self.sip = Some(value);
         self
     }
 
@@ -52,6 +61,7 @@ impl AgentsAddCustomPhoneNumberRequestBuilder {
         Ok(AgentsAddCustomPhoneNumberRequest {
             phone_number: self.phone_number.ok_or_else(|| BuildError::missing_field("phone_number"))?,
             configuration_endpoint: self.configuration_endpoint,
+            sip: self.sip,
             project: self.project,
         })
     }

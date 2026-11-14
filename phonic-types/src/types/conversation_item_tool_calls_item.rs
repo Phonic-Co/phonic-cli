@@ -15,7 +15,7 @@ pub struct ConversationItemToolCallsItem {
     /// HTTP method for webhook tool calls.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint_method: Option<String>,
-    /// URL for webhook tool calls.
+    /// URL for webhook tool calls, as called (with any `url_path` placeholders filled in).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint_url: Option<String>,
     /// Headers for webhook tool calls.

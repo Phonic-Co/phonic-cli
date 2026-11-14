@@ -17,10 +17,10 @@ pub struct ConversationsListQueryRequest {
     /// Maximum duration in seconds.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_max: Option<i64>,
-    /// Minimum start date/time. Valid examples: `2025-04-17`, `2025-04-17T02:48:52.708Z`
+    /// Only return conversations that started at or after this time. Accepts a UTC date (`2025-04-17`) or a UTC date-time with milliseconds (`2025-04-17T02:48:52.708Z`). UTC offsets are not supported.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub started_at_min: Option<String>,
-    /// Maximum start date/time. Valid examples: `2025-04-17`, `2025-04-17T02:48:52.708Z`
+    /// Only return conversations that started at or before this time. Accepts a UTC date (`2025-04-17`, meaning midnight at the start of that day) or a UTC date-time with milliseconds (`2025-04-17T02:48:52.708Z`). UTC offsets are not supported.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub started_at_max: Option<String>,
     /// Cursor for backward pagination. Use a conversation ID from `pagination.prev_cursor` to fetch the previous page of conversations. Cannot be used with `after`.

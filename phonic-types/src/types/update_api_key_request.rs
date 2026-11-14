@@ -4,9 +4,14 @@ use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct UpdateApiKeyRequest {
-    /// The new name for the API key.
-    #[serde(default)]
-    pub name: String,
+    /// The new name for the API key. Unique within the workspace.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// Replaces the key's scope. Must be within the caller's own scope.
+    /// The caller can change a key only when that key's current scope is
+    /// also within the caller's scope.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<ApiKeyScope>,
 }
 
 impl UpdateApiKeyRequest {
@@ -19,6 +24,7 @@ impl UpdateApiKeyRequest {
 #[non_exhaustive]
 pub struct UpdateApiKeyRequestBuilder {
     name: Option<String>,
+    scope: Option<ApiKeyScope>,
 }
 
 impl UpdateApiKeyRequestBuilder {
@@ -27,12 +33,16 @@ impl UpdateApiKeyRequestBuilder {
         self
     }
 
+    pub fn scope(mut self, value: ApiKeyScope) -> Self {
+        self.scope = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`UpdateApiKeyRequest`].
-    /// This method will fail if any of the following fields are not set:
-    /// - [`name`](UpdateApiKeyRequestBuilder::name)
     pub fn build(self) -> Result<UpdateApiKeyRequest, BuildError> {
         Ok(UpdateApiKeyRequest {
-            name: self.name.ok_or_else(|| BuildError::missing_field("name"))?,
+            name: self.name,
+            scope: self.scope,
         })
     }
 }

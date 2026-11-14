@@ -15,6 +15,12 @@ impl ApiKeysClient {
 
     /// Creates a new API key in the workspace.
     ///
+    /// Requires an API key with workspace access, or an access token. The new
+    /// key's `scope` must be within the caller's scope. Omit `scope` and an
+    /// API key copies its own scope onto the new key. An access token that
+    /// omits `scope` creates a key with access to every project and to
+    /// workspace management.
+    ///
     /// # Arguments
     ///
     /// * `options` - Additional request options such as headers, timeout, etc.
@@ -26,7 +32,7 @@ impl ApiKeysClient {
         &self,
         request: &CreateApiKeyRequest,
         options: Option<RequestOptions>,
-    ) -> Result<ApiKeyWithSecret, ApiError> {
+    ) -> Result<CreateApiKeyResponse, ApiError> {
         let base_url = self
             .http_client
             .config()
@@ -46,6 +52,10 @@ impl ApiKeysClient {
     }
 
     /// Deletes an API key.
+    ///
+    /// Requires an API key with workspace access, or an access token. The
+    /// caller can delete a key only when that key's scope is within the
+    /// caller's scope.
     ///
     /// # Arguments
     ///
@@ -78,7 +88,13 @@ impl ApiKeysClient {
             .await
     }
 
-    /// Updates an API key.
+    /// Updates an API key's name, scope, or both. Send at least one of `name`
+    /// and `scope`.
+    ///
+    /// Requires an API key with workspace access, or an access token. The
+    /// caller can update a key only when that key's current scope is within
+    /// the caller's scope, and a new `scope` must also be within the caller's
+    /// scope.
     ///
     /// # Arguments
     ///
@@ -112,7 +128,12 @@ impl ApiKeysClient {
             .await
     }
 
-    /// Rotates an API key, generating a new secret and invalidating the old one.
+    /// Rotates an API key, generating a new secret and invalidating the old
+    /// one. The new key keeps the previous key's name and scope.
+    ///
+    /// Requires an API key with workspace access, or an access token. The
+    /// caller can rotate a key only when that key's scope is within the
+    /// caller's scope.
     ///
     /// # Arguments
     ///

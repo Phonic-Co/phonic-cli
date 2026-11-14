@@ -9,11 +9,15 @@ Full command reference for `phonic`.
 - [`phonic auth`](#phonic-auth)
 - [`phonic conversation-items`](#phonic-conversation-items)
 - [`phonic conversations`](#phonic-conversations)
+- [`phonic external-storage-policies`](#phonic-external-storage-policies)
 - [`phonic extraction-schemas`](#phonic-extraction-schemas)
+- [`phonic mcp-servers`](#phonic-mcp-servers)
 - [`phonic projects`](#phonic-projects)
+- [`phonic responses`](#phonic-responses)
 - [`phonic tools`](#phonic-tools)
 - [`phonic tts`](#phonic-tts)
 - [`phonic voices`](#phonic-voices)
+- [`phonic webhooks`](#phonic-webhooks)
 - [`phonic workspace`](#phonic-workspace)
 
 ---
@@ -22,7 +26,7 @@ Full command reference for `phonic`.
 
 #### `phonic agents add-custom-phone-number`
 
-Adds a custom phone number to an agent. The user must configure their SIP trunk to point to Phonic's SIP server.
+Adds a bring-your-own phone number to an agent in the authenticated workspace and project. Use this to connect a phone number and SIP trunk the user is authorized to manage; it does not purchase a number or place a call. Stores the supplied SIP address and credentials for calls and transfers, and saves any configuration endpoint for calls on this number. The user must configure their SIP trunk to route inbound calls to Phonic. A configured endpoint receives requests during call setup; use only an endpoint the user intends Phonic to contact.
 
 `POST /agents/{nameOrId}/custom-phone-numbers`
 
@@ -30,9 +34,9 @@ Adds a custom phone number to an agent. The user must configure their SIP trunk 
 |------|------|----------|-------------|
 | `--name-or-id` | `string` | Yes | The name or the ID of the agent. |
 | `--project` | `string` | No | The name of the project containing the agent. Only used when `nameOrId` is a name. |
-| `--x-sip-address` | `string` | No | SIP address of the user's SIP trunk. Optional, but if provided, all three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. When these headers are provided, call transfers from the agent will use the provided SIP details. |
-| `--x-sip-auth-username` | `string` | No | SIP auth username. Optional, but if provided, all three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. When these headers are provided, call transfers from the agent will use the provided SIP details. |
-| `--x-sip-auth-password` | `string` | No | SIP auth password. Optional, but if provided, all three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. When these headers are provided, call transfers from the agent will use the provided SIP details. |
+| `--x-sip-address` | `string` | Yes | SIP address of the user's SIP trunk. Required. All three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. They are used for outbound calls and call transfers from the agent. |
+| `--x-sip-auth-username` | `string` | Yes | SIP auth username. Required. All three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. They are used for outbound calls and call transfers from the agent. |
+| `--x-sip-auth-password` | `string` | Yes | SIP auth password. Required. All three SIP headers (X-Sip-Address, X-Sip-Auth-Username, X-Sip-Auth-Password) must be provided. They are used for outbound calls and call transfers from the agent. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
 #### `phonic agents create`
@@ -68,6 +72,28 @@ Deletes a custom phone number from an agent.
 | `--name-or-id` | `string` | Yes | The name or the ID of the agent. |
 | `--project` | `string` | No | The name of the project containing the agent. Only used when `nameOrId` is a name. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `phonic agents disable`
+
+Disables an agent by name or ID. A disabled agent cannot start conversations or be updated, except to release its phone numbers.
+
+`POST /agents/{nameOrId}/disable`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the agent. |
+| `--project` | `string` | No | The name of the project containing the agent. Only used when `nameOrId` is a name. |
+
+#### `phonic agents enable`
+
+Enables a previously disabled agent by name or ID.
+
+`POST /agents/{nameOrId}/enable`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the agent. |
+| `--project` | `string` | No | The name of the project containing the agent. Only used when `nameOrId` is a name. |
 
 #### `phonic agents get`
 
@@ -133,6 +159,13 @@ Upserts an agent by name. If an agent with the same name already exists, it will
 
 Creates a new API key in the workspace.
 
+Requires an API key with workspace access, or an access token. The new
+key's `scope` must be within the caller's scope. Omit `scope` and an
+API key copies its own scope onto the new key. An access token that
+omits `scope` creates a key with access to every project and to
+workspace management.
+
+
 `POST /api_keys`
 
 | Flag | Type | Required | Description |
@@ -143,6 +176,11 @@ Creates a new API key in the workspace.
 
 Deletes an API key.
 
+Requires an API key with workspace access, or an access token. The
+caller can delete a key only when that key's scope is within the
+caller's scope.
+
+
 `DELETE /api_keys/{id}`
 
 | Flag | Type | Required | Description |
@@ -151,7 +189,13 @@ Deletes an API key.
 
 #### `phonic api-keys rotate`
 
-Rotates an API key, generating a new secret and invalidating the old one.
+Rotates an API key, generating a new secret and invalidating the old
+one. The new key keeps the previous key's name and scope.
+
+Requires an API key with workspace access, or an access token. The
+caller can rotate a key only when that key's scope is within the
+caller's scope.
+
 
 `POST /api_keys/{id}/rotate`
 
@@ -161,7 +205,14 @@ Rotates an API key, generating a new secret and invalidating the old one.
 
 #### `phonic api-keys update`
 
-Updates an API key.
+Updates an API key's name, scope, or both. Send at least one of `name`
+and `scope`.
+
+Requires an API key with workspace access, or an access token. The
+caller can update a key only when that key's current scope is within
+the caller's scope, and a new `scope` must also be within the caller's
+scope.
+
 
 `PATCH /api_keys/{id}`
 
@@ -201,10 +252,11 @@ Creates a short-lived session token that can be used to authenticate WebSocket c
 #### `phonic conversation-items replay`
 
 Returns the alternative response(s) the assistant would have
-produced for this conversation turn given changes to the agent system prompt.
+produced for this conversation turn given changes to the system prompt or model.
 
-Only assistant items from ended conversations can be replayed. The
-conversation must have an associated agent.
+Only assistant items from ended conversations can be replayed. Omit the
+request body to use the original prompt and model. Set `model` to compare
+the same turn on another model available to your workspace.
 
 
 `POST /conversation_items/{id}/replay`
@@ -212,7 +264,7 @@ conversation must have an associated agent.
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--id` | `string` | Yes | The ID of the conversation item to replay. |
-| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+| `--json` | `JSON` | No | Request body as JSON (or use individual body-field flags) |
 
 ---
 
@@ -283,7 +335,7 @@ Returns an analysis of the specified conversation.
 
 #### `phonic conversations list`
 
-Returns conversations with optional filtering.
+Returns conversations with optional filtering. Each item is the full conversation object returned by [Get conversation](/api-reference/conversations/get), including transcripts, `system_prompt` and `items`.
 
 `GET /conversations`
 
@@ -293,8 +345,8 @@ Returns conversations with optional filtering.
 | `--external-id` | `string` | No | Filter by external ID to get a specific conversation. |
 | `--duration-min` | `integer` | No | Minimum duration in seconds. |
 | `--duration-max` | `integer` | No | Maximum duration in seconds. |
-| `--started-at-min` | `string` | No | Minimum start date/time. Valid examples: `2025-04-17`, `2025-04-17T02:48:52.708Z` |
-| `--started-at-max` | `string` | No | Maximum start date/time. Valid examples: `2025-04-17`, `2025-04-17T02:48:52.708Z` |
+| `--started-at-min` | `string` | No | Only return conversations that started at or after this time. Accepts a UTC date (`2025-04-17`) or a UTC date-time with milliseconds (`2025-04-17T02:48:52.708Z`). UTC offsets are not supported. |
+| `--started-at-max` | `string` | No | Only return conversations that started at or before this time. Accepts a UTC date (`2025-04-17`, meaning midnight at the start of that day) or a UTC date-time with milliseconds (`2025-04-17T02:48:52.708Z`). UTC offsets are not supported. |
 | `--before` | `string` | No | Cursor for backward pagination. Use a conversation ID from `pagination.prev_cursor` to fetch the previous page of conversations. Cannot be used with `after`. |
 | `--after` | `string` | No | Cursor for forward pagination. Use a conversation ID from `pagination.next_cursor` to fetch the next page of conversations. Cannot be used with `before`. |
 | `--limit` | `integer` | No | Maximum number of conversations to return per page. |
@@ -347,7 +399,7 @@ the request body).
 
 #### `phonic conversations sip-outbound-call`
 
-Initiates a SIP outbound call using user-supplied SIP credentials in headers.
+Places an outbound voice-agent phone call through the user's SIP trunk using the supplied SIP credentials, caller ID, destination phone number, and conversation configuration. Use only when the user requests a call to that recipient and is authorized to use the trunk and caller ID. With `dry_run` omitted or false, this contacts the recipient and may incur telephony charges; repeating a successful request may place another call. Set `dry_run` to true to validate setup without placing a call. A dry run does not verify that the recipient can be reached or test call audio.
 
 `POST /conversations/sip/outbound_call`
 
@@ -356,6 +408,65 @@ Initiates a SIP outbound call using user-supplied SIP credentials in headers.
 | `--x-sip-address` | `string` | Yes | SIP address of the user's SIP trunk. Required. |
 | `--x-sip-auth-username` | `string` | No | SIP auth username, if your provider requires it. |
 | `--x-sip-auth-password` | `string` | No | SIP auth password, if your provider requires it. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+---
+
+### `phonic external-storage-policies`
+
+#### `phonic external-storage-policies create`
+
+Creates a named external storage policy in the authenticated workspace and project, storing the supplied S3-compatible destination and credentials for later artifact delivery. Use this when the user wants agents to export conversation artifacts to a bucket they are authorized to use. Agents referencing this policy send conversation artifacts, which may contain personal data, to that external destination. Creating the policy does not attach it to an agent or export existing conversations.
+
+`POST /external_storage_policies`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--project` | `string` | No | The name of the project to create the external storage policy in. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `phonic external-storage-policies delete`
+
+Deletes an external storage policy by name or ID. The policy must not be referenced by any agent.
+
+`DELETE /external_storage_policies/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the external storage policy to delete. |
+| `--project` | `string` | No | The name of the project containing the external storage policy. Only used when `nameOrId` is a name. |
+
+#### `phonic external-storage-policies get`
+
+Returns an external storage policy by name or ID.
+
+`GET /external_storage_policies/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the external storage policy to get. |
+| `--project` | `string` | No | The name of the project containing the external storage policy. Only used when `nameOrId` is a name. |
+
+#### `phonic external-storage-policies list`
+
+Returns all external storage policies in a project.
+
+`GET /external_storage_policies`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--project` | `string` | No | The name of the project to list external storage policies for. |
+
+#### `phonic external-storage-policies update`
+
+Updates the supplied fields of an existing external storage policy by name or ID in the authenticated workspace and project. Use this to change the artifact destination or rotate its credentials. Changes affect subsequent artifact delivery for agents referencing the policy; changing the endpoint or bucket can send conversation artifacts, which may contain personal data, to a different external destination. Confirm the intended destination before updating. Rotate credentials by providing both `access_key_id` and `secret_access_key`. This operation does not move or delete artifacts already delivered.
+
+`PATCH /external_storage_policies/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the external storage policy to update. |
+| `--project` | `string` | No | The name of the project containing the external storage policy. Only used when `nameOrId` is a name. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
 ---
@@ -419,11 +530,70 @@ Updates an extraction schema by name or ID.
 
 ---
 
+### `phonic mcp-servers`
+
+#### `phonic mcp-servers create`
+
+Creates an MCP server in the authenticated workspace and project. Phonic connects to the server, lists its tools and saves them alongside the server, so the server must be reachable from Phonic's network. The supplied headers are sent on every request Phonic makes to the server; their values are stored encrypted and never returned. Creating the server does not attach it to an agent; add its ID to an agent's `mcp_server_ids` to make its tools available.
+
+`POST /mcp_servers`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--project` | `string` | No | The name of the project to create the MCP server in. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `phonic mcp-servers delete`
+
+Deletes an MCP server by name or ID and removes it from every agent's `mcp_server_ids`.
+
+`DELETE /mcp_servers/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the MCP server to delete. |
+| `--project` | `string` | No | The name of the project containing the MCP server. Only used when `nameOrId` is a name. |
+
+#### `phonic mcp-servers get`
+
+Returns an MCP server by name or ID.
+
+`GET /mcp_servers/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the MCP server to get. |
+| `--project` | `string` | No | The name of the project containing the MCP server. Only used when `nameOrId` is a name. |
+
+#### `phonic mcp-servers list`
+
+Returns all MCP servers in a project.
+
+`GET /mcp_servers`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--project` | `string` | No | The name of the project to list MCP servers for. |
+
+#### `phonic mcp-servers update`
+
+Updates the name and/or headers of an existing MCP server by name or ID. Providing `headers` replaces all existing headers. The URL cannot be changed; delete and re-create the server instead.
+
+`PATCH /mcp_servers/{nameOrId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--name-or-id` | `string` | Yes | The name or the ID of the MCP server to update. |
+| `--project` | `string` | No | The name of the project containing the MCP server. Only used when `nameOrId` is a name. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+---
+
 ### `phonic projects`
 
 #### `phonic projects create`
 
-Creates a new project in a workspace.
+Creates a new project in the workspace. An API key must have workspace access.
 
 `POST /projects`
 
@@ -444,7 +614,7 @@ Creates a new conversation evaluation prompt for a project.
 
 #### `phonic projects delete`
 
-Deletes a project by name or ID.
+Deletes a project by name or ID. An API key can delete a project only when that project is in its scope.
 
 `DELETE /projects/{nameOrId}`
 
@@ -454,7 +624,7 @@ Deletes a project by name or ID.
 
 #### `phonic projects get`
 
-Returns a project by name or ID.
+Returns a project by name or ID. An API key can read a project only when that project is in its scope.
 
 `GET /projects/{nameOrId}`
 
@@ -464,7 +634,9 @@ Returns a project by name or ID.
 
 #### `phonic projects list`
 
-Returns all projects in a workspace.
+Returns the projects in the workspace. An API key limited to selected
+projects receives only those projects.
+
 
 `GET /projects`
 
@@ -490,13 +662,57 @@ Returns all conversation evaluation results for a project.
 
 #### `phonic projects update`
 
-Updates a project by name or ID.
+Updates a project by name or ID. An API key can update a project only when that project is in its scope.
 
 `PATCH /projects/{nameOrId}`
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--name-or-id` | `string` | Yes | The name or the ID of the project to update. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+---
+
+### `phonic responses`
+
+#### `phonic responses create`
+
+Generates one or more alternative assistant responses for a conversation
+you supply inline to simulate Phonic agent behavior.
+
+This endpoint is stateless, so it does not create a new conversation or
+store anything. The request carries the system prompt, a conversation so
+far as `input`, and the tools the assistant may call.
+
+There are two different types of tool configurations:
+
+- `tool_definitions`: defined inline. Typically if you use LiveKit, this
+  is where you can pass in your tool definitions.
+- `tools`: tools that already exist in Phonic, in the same shape as the
+  STS WebSocket `config` message. Built-in tools such as
+  `choose_not_to_respond` are passed by their built-in name or as a
+  `{type: "built_in", name, tool_config}` object. The only tools stored in
+  `project` that can be referenced by name are transfer tools (transfer to
+  phone number and transfer to agent). Stored built-in tool instances
+  (such as a saved choose not to respond, natural conversation ending or
+  keypad input tool) cannot be referenced by their saved name; pass the
+  built-in itself instead. Your context, webhook, MCP and WebSocket tools
+  cannot be referenced here yet; define those inline as `tool_definitions`.
+
+Each item in `input` is a user message, an assistant message (with
+optional `tool_calls` or an `action`), or a `tool_call_output`. Every
+assistant tool call must be followed immediately by the
+`tool_call_output` item that carries its result.
+
+A tool referenced in `tools` resolves to an `action` on the generated
+response rather than a tool call - the event a live conversation would
+have emitted, without the effect actually being carried out.
+
+
+`POST /responses`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
 ---
@@ -588,13 +804,114 @@ Returns a voice by ID.
 
 #### `phonic voices list`
 
-Returns all available voices for a model.
+Returns all available voices.
 
 `GET /voices`
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--model` | `merritt` | Yes | The model to get voices for. |
+| `--model` | `merritt` | No | Ignored. This parameter is deprecated and can be omitted. |
+
+#### `phonic voices preview`
+
+Generates speech audio for the provided text and returns it as a single base64-encoded string.
+
+`POST /tts`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+---
+
+### `phonic webhooks`
+
+#### `phonic webhooks create`
+
+Creates a webhook that sends the chosen events for the chosen projects
+to `endpoint_url`. The response includes the webhook's signing secret.
+
+Requires an API key with workspace access, or an access token. An API
+key restricted to selected projects can only use projects within its
+scope.
+
+
+`POST /webhooks`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `phonic webhooks delete`
+
+Deletes a webhook.
+
+Requires an API key with workspace access, or an access token. An API
+key restricted to selected projects can only delete a webhook whose
+projects are all within its scope.
+
+
+`DELETE /webhooks/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The ID of the webhook to delete. |
+
+#### `phonic webhooks get`
+
+Returns a webhook.
+
+Requires workspace access. An API key restricted to selected projects
+can only get a webhook whose projects are all within its scope.
+
+
+`GET /webhooks/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The ID of the webhook. |
+
+#### `phonic webhooks get-secret`
+
+Returns the secret used to sign the webhook's requests.
+
+Requires an API key with workspace access, or an access token. An API
+key restricted to selected projects can only get the secret of a
+webhook whose projects are all within its scope.
+
+
+`GET /webhooks/{id}/secret`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The ID of the webhook. |
+
+#### `phonic webhooks list`
+
+Returns the workspace's webhooks, newest first.
+
+Requires workspace access. An API key restricted to selected projects
+only sees webhooks whose projects are all within its scope.
+
+
+`GET /webhooks`
+
+#### `phonic webhooks update`
+
+Updates a webhook's events, projects, or both. The endpoint URL cannot
+be changed; create a new webhook instead.
+
+Requires an API key with workspace access, or an access token. An API
+key restricted to selected projects can only update a webhook whose
+current and new projects are all within its scope.
+
+
+`PATCH /webhooks/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The ID of the webhook to update. |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
 ---
 
@@ -602,13 +919,13 @@ Returns all available voices for a model.
 
 #### `phonic workspace get`
 
-Returns information about the workspace.
+Returns information about the workspace. An API key must have workspace access.
 
 `GET /workspace`
 
 #### `phonic workspace update`
 
-Updates the workspace.
+Updates the workspace. An API key must have workspace access.
 
 `PATCH /workspace`
 
