@@ -13,6 +13,9 @@ pub struct UpdateWorkspaceRequest {
     /// IP addresses or CIDR ranges allowed to access the workspace.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_allowlist: Option<Vec<String>>,
+    /// Email alert recipients, keyed by alert type. Replaces the workspace's alerts; alert types omitted from this object are removed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alerts: Option<UpdateWorkspaceRequestAlerts>,
 }
 
 impl UpdateWorkspaceRequest {
@@ -27,6 +30,7 @@ pub struct UpdateWorkspaceRequestBuilder {
     logo_url: Option<String>,
     invite_link_allowed_domains: Option<Vec<String>>,
     ip_allowlist: Option<Vec<String>>,
+    alerts: Option<UpdateWorkspaceRequestAlerts>,
 }
 
 impl UpdateWorkspaceRequestBuilder {
@@ -45,12 +49,18 @@ impl UpdateWorkspaceRequestBuilder {
         self
     }
 
+    pub fn alerts(mut self, value: UpdateWorkspaceRequestAlerts) -> Self {
+        self.alerts = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`UpdateWorkspaceRequest`].
     pub fn build(self) -> Result<UpdateWorkspaceRequest, BuildError> {
         Ok(UpdateWorkspaceRequest {
             logo_url: self.logo_url,
             invite_link_allowed_domains: self.invite_link_allowed_domains,
             ip_allowlist: self.ip_allowlist,
+            alerts: self.alerts,
         })
     }
 }

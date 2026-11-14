@@ -2,10 +2,13 @@ pub use crate::prelude::*;
 #[allow(unused_imports)]
 use super::*;
 
+/// A template variable saved on the agent.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct CreateAgentRequestTemplateVariablesValue {
+    /// Value used when a conversation doesn't provide one. Can be an empty string.
     #[serde(default)]
     pub default_value: String,
+    /// When true, the variable's value is added to the agent's boosted keywords. Boosted values can be at most 50 characters.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_boosted_keyword: Option<bool>,
 }

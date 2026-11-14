@@ -229,7 +229,7 @@ impl AgentsClient {
             .await
     }
 
-    /// Adds a custom phone number to an agent. The user must configure their SIP trunk to point to Phonic's SIP server.
+    /// Adds a bring-your-own phone number to an agent in the authenticated workspace and project. Use this to connect a phone number and SIP trunk the user is authorized to manage; it does not purchase a number or place a call. Stores the supplied SIP address and credentials for calls and transfers, and saves any configuration endpoint for calls on this number. The user must configure their SIP trunk to route inbound calls to Phonic. A configured endpoint receives requests during call setup; use only an endpoint the user intends Phonic to contact.
     ///
     /// # Arguments
     ///
@@ -332,6 +332,80 @@ impl AgentsClient {
                 Method::PATCH,
                 &format!("agents/{}/phone-numbers", name_or_id),
                 Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                QueryBuilder::new()
+                    .string("project", request.project.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Disables an agent by name or ID. A disabled agent cannot start conversations or be updated, except to release its phone numbers.
+    ///
+    /// # Arguments
+    ///
+    /// * `name_or_id` - The name or the ID of the agent.
+    /// * `project` - The name of the project containing the agent. Only used when `nameOrId` is a name.
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    pub async fn disable(
+        &self,
+        name_or_id: &str,
+        request: &DisableQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<AgentsDisableResponse, ApiError> {
+        let base_url = self
+            .http_client
+            .config()
+            .environment
+            .as_ref()
+            .map_or(self.http_client.base_url(), |env| env.base_url());
+        self.http_client
+            .execute_request_with_base_url(
+                base_url,
+                Method::POST,
+                &format!("agents/{}/disable", name_or_id),
+                None,
+                QueryBuilder::new()
+                    .string("project", request.project.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Enables a previously disabled agent by name or ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `name_or_id` - The name or the ID of the agent.
+    /// * `project` - The name of the project containing the agent. Only used when `nameOrId` is a name.
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    pub async fn enable(
+        &self,
+        name_or_id: &str,
+        request: &EnableQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<AgentsEnableResponse, ApiError> {
+        let base_url = self
+            .http_client
+            .config()
+            .environment
+            .as_ref()
+            .map_or(self.http_client.base_url(), |env| env.base_url());
+        self.http_client
+            .execute_request_with_base_url(
+                base_url,
+                Method::POST,
+                &format!("agents/{}/enable", name_or_id),
+                None,
                 QueryBuilder::new()
                     .string("project", request.project.clone())
                     .build(),

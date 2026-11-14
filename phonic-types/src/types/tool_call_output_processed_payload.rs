@@ -16,7 +16,7 @@ pub struct ToolCallOutputProcessedPayload {
     /// HTTP method used for webhook endpoint (null for WebSocket tools)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint_method: Option<String>,
-    /// Webhook endpoint URL (null for WebSocket tools)
+    /// Webhook endpoint URL as called, with any `url_path` placeholders filled in (null for WebSocket tools)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint_url: Option<String>,
     /// Webhook timeout in milliseconds (null for WebSocket tools)
@@ -52,6 +52,8 @@ pub struct ToolCallOutputProcessedPayload {
     /// Error message if tool call failed
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
+    /// The role of the conversation turn the tool call was attached to. A tool call made while the user is still speaking is attached to the user's turn.
+    pub conversation_item_role: ToolCallOutputProcessedPayloadConversationItemRole,
 }
 
 impl ToolCallOutputProcessedPayload {
@@ -80,6 +82,7 @@ pub struct ToolCallOutputProcessedPayloadBuilder {
     duration_ms: Option<f64>,
     timed_out: Option<bool>,
     error_message: Option<String>,
+    conversation_item_role: Option<ToolCallOutputProcessedPayloadConversationItemRole>,
 }
 
 impl ToolCallOutputProcessedPayloadBuilder {
@@ -168,11 +171,17 @@ impl ToolCallOutputProcessedPayloadBuilder {
         self
     }
 
+    pub fn conversation_item_role(mut self, value: ToolCallOutputProcessedPayloadConversationItemRole) -> Self {
+        self.conversation_item_role = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`ToolCallOutputProcessedPayload`].
     /// This method will fail if any of the following fields are not set:
     /// - [`r#type`](ToolCallOutputProcessedPayloadBuilder::r#type)
     /// - [`tool_call_id`](ToolCallOutputProcessedPayloadBuilder::tool_call_id)
     /// - [`tool`](ToolCallOutputProcessedPayloadBuilder::tool)
+    /// - [`conversation_item_role`](ToolCallOutputProcessedPayloadBuilder::conversation_item_role)
     pub fn build(self) -> Result<ToolCallOutputProcessedPayload, BuildError> {
         Ok(ToolCallOutputProcessedPayload {
             r#type: self.r#type.ok_or_else(|| BuildError::missing_field("r#type"))?,
@@ -192,6 +201,7 @@ impl ToolCallOutputProcessedPayloadBuilder {
             duration_ms: self.duration_ms,
             timed_out: self.timed_out,
             error_message: self.error_message,
+            conversation_item_role: self.conversation_item_role.ok_or_else(|| BuildError::missing_field("conversation_item_role"))?,
         })
     }
 }

@@ -13,7 +13,7 @@ impl WorkspaceClient {
         })
     }
 
-    /// Returns information about the workspace.
+    /// Returns information about the workspace. An API key must have workspace access.
     ///
     /// # Arguments
     ///
@@ -37,7 +37,7 @@ impl WorkspaceClient {
             .await
     }
 
-    /// Updates the workspace.
+    /// Updates the workspace. An API key must have workspace access.
     ///
     /// # Arguments
     ///

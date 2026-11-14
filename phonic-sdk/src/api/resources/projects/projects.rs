@@ -13,7 +13,8 @@ impl ProjectsClient {
         })
     }
 
-    /// Returns all projects in a workspace.
+    /// Returns the projects in the workspace. An API key limited to selected
+    /// projects receives only those projects.
     ///
     /// # Arguments
     ///
@@ -37,7 +38,7 @@ impl ProjectsClient {
             .await
     }
 
-    /// Creates a new project in a workspace.
+    /// Creates a new project in the workspace. An API key must have workspace access.
     ///
     /// # Arguments
     ///
@@ -69,7 +70,7 @@ impl ProjectsClient {
             .await
     }
 
-    /// Returns a project by name or ID.
+    /// Returns a project by name or ID. An API key can read a project only when that project is in its scope.
     ///
     /// # Arguments
     ///
@@ -102,7 +103,7 @@ impl ProjectsClient {
             .await
     }
 
-    /// Deletes a project by name or ID.
+    /// Deletes a project by name or ID. An API key can delete a project only when that project is in its scope.
     ///
     /// # Arguments
     ///
@@ -135,7 +136,7 @@ impl ProjectsClient {
             .await
     }
 
-    /// Updates a project by name or ID.
+    /// Updates a project by name or ID. An API key can update a project only when that project is in its scope.
     ///
     /// # Arguments
     ///

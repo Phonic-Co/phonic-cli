@@ -4,15 +4,19 @@
 //!
 //! - **Agents**
 //! - **Tools**
+//! - **McpServers**
+//! - **ExternalStoragePolicies**
 //! - **ExtractionSchemas**
 //! - **Voices**
 //! - **Workspace**
 //! - **ApiKeys**
+//! - **Webhooks**
 //! - **ConversationItems**
 //! - **Conversations**
 //! - **Auth**
 //! - **Tts**
 //! - **Projects**
+//! - **Responses**
 
 use crate::{ApiError, ClientConfig};
 
@@ -21,25 +25,33 @@ pub mod api_keys;
 pub mod auth;
 pub mod conversation_items;
 pub mod conversations;
+pub mod external_storage_policies;
 pub mod extraction_schemas;
+pub mod mcp_servers;
 pub mod projects;
+pub mod responses;
 pub mod tools;
 pub mod tts;
 pub mod voices;
+pub mod webhooks;
 pub mod workspace;
 pub struct ApiClient {
     pub config: ClientConfig,
     pub agents: AgentsClient,
     pub tools: ToolsClient,
+    pub mcp_servers: McpServersClient,
+    pub external_storage_policies: ExternalStoragePoliciesClient,
     pub extraction_schemas: ExtractionSchemasClient,
     pub voices: VoicesClient,
     pub workspace: WorkspaceClient,
     pub api_keys: ApiKeysClient,
+    pub webhooks: WebhooksClient,
     pub conversation_items: ConversationItemsClient,
     pub conversations: ConversationsClient,
     pub auth: AuthClient,
     pub tts: TtsClient,
     pub projects: ProjectsClient,
+    pub responses: ResponsesClient,
 }
 
 impl ApiClient {
@@ -61,6 +73,22 @@ impl ApiClient {
                     .as_ref()
                     .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
                 ToolsClient::new(cfg)?
+            },
+            mcp_servers: {
+                let mut cfg = config.clone();
+                cfg.base_url = cfg
+                    .environment
+                    .as_ref()
+                    .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
+                McpServersClient::new(cfg)?
+            },
+            external_storage_policies: {
+                let mut cfg = config.clone();
+                cfg.base_url = cfg
+                    .environment
+                    .as_ref()
+                    .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
+                ExternalStoragePoliciesClient::new(cfg)?
             },
             extraction_schemas: {
                 let mut cfg = config.clone();
@@ -93,6 +121,14 @@ impl ApiClient {
                     .as_ref()
                     .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
                 ApiKeysClient::new(cfg)?
+            },
+            webhooks: {
+                let mut cfg = config.clone();
+                cfg.base_url = cfg
+                    .environment
+                    .as_ref()
+                    .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
+                WebhooksClient::new(cfg)?
             },
             conversation_items: {
                 let mut cfg = config.clone();
@@ -134,6 +170,14 @@ impl ApiClient {
                     .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
                 ProjectsClient::new(cfg)?
             },
+            responses: {
+                let mut cfg = config.clone();
+                cfg.base_url = cfg
+                    .environment
+                    .as_ref()
+                    .map_or_else(|| cfg.base_url.clone(), |env| env.base_url().to_string());
+                ResponsesClient::new(cfg)?
+            },
         })
     }
 }
@@ -143,9 +187,13 @@ pub use api_keys::ApiKeysClient;
 pub use auth::AuthClient;
 pub use conversation_items::ConversationItemsClient;
 pub use conversations::ConversationsClient;
+pub use external_storage_policies::ExternalStoragePoliciesClient;
 pub use extraction_schemas::ExtractionSchemasClient;
+pub use mcp_servers::McpServersClient;
 pub use projects::ProjectsClient;
+pub use responses::ResponsesClient;
 pub use tools::ToolsClient;
 pub use tts::TtsClient;
 pub use voices::VoicesClient;
+pub use webhooks::WebhooksClient;
 pub use workspace::WorkspaceClient;
