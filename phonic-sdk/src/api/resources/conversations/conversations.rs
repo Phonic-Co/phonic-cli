@@ -13,7 +13,7 @@ impl ConversationsClient {
         })
     }
 
-    /// Returns conversations with optional filtering.
+    /// Returns conversations with optional filtering. Each item is the full conversation object returned by [Get conversation](/api-reference/conversations/get), including transcripts, `system_prompt` and `items`.
     ///
     /// # Arguments
     ///
@@ -21,8 +21,8 @@ impl ConversationsClient {
     /// * `external_id` - Filter by external ID to get a specific conversation.
     /// * `duration_min` - Minimum duration in seconds.
     /// * `duration_max` - Maximum duration in seconds.
-    /// * `started_at_min` - Minimum start date/time. Valid examples: `2025-04-17`, `2025-04-17T02:48:52.708Z`
-    /// * `started_at_max` - Maximum start date/time. Valid examples: `2025-04-17`, `2025-04-17T02:48:52.708Z`
+    /// * `started_at_min` - Only return conversations that started at or after this time. Accepts a UTC date (`2025-04-17`) or a UTC date-time with milliseconds (`2025-04-17T02:48:52.708Z`). UTC offsets are not supported.
+    /// * `started_at_max` - Only return conversations that started at or before this time. Accepts a UTC date (`2025-04-17`, meaning midnight at the start of that day) or a UTC date-time with milliseconds (`2025-04-17T02:48:52.708Z`). UTC offsets are not supported.
     /// * `before` - Cursor for backward pagination. Use a conversation ID from `pagination.prev_cursor` to fetch the previous page of conversations. Cannot be used with `after`.
     /// * `after` - Cursor for forward pagination. Use a conversation ID from `pagination.next_cursor` to fetch the next page of conversations. Cannot be used with `before`.
     /// * `limit` - Maximum number of conversations to return per page.
@@ -368,7 +368,7 @@ impl ConversationsClient {
             .await
     }
 
-    /// Initiates a SIP outbound call using user-supplied SIP credentials in headers.
+    /// Places an outbound voice-agent phone call through the user's SIP trunk using the supplied SIP credentials, caller ID, destination phone number, and conversation configuration. Use only when the user requests a call to that recipient and is authorized to use the trunk and caller ID. With `dry_run` omitted or false, this contacts the recipient and may incur telephony charges; repeating a successful request may place another call. Set `dry_run` to true to validate setup without placing a call. A dry run does not verify that the recipient can be reached or test call audio.
     ///
     /// # Arguments
     ///
