@@ -4,9 +4,12 @@ use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct ReplayConversationItemRequest {
-    /// The system prompt to use when generating replay responses. Use this to test prompt changes against this conversation turn.
-    #[serde(default)]
-    pub system_prompt: String,
+    /// Optional model override for this replay. Omit it to use the original model. Select a model available to your workspace. Phonic 0.5 (phonic-0.5) is deprecated and remains available only to customers who used it before Phonic 1 launched. The conversation's saved intelligence level is retained.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<ReplayConversationItemRequestModel>,
+    /// The system prompt to use when generating replay responses. Use this to test prompt changes against this conversation turn. Omit it to replay the turn with the system prompt it originally ran with.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
     /// Number of alternative responses to generate.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub num_responses: Option<i64>,
@@ -21,11 +24,17 @@ impl ReplayConversationItemRequest {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct ReplayConversationItemRequestBuilder {
+    model: Option<ReplayConversationItemRequestModel>,
     system_prompt: Option<String>,
     num_responses: Option<i64>,
 }
 
 impl ReplayConversationItemRequestBuilder {
+    pub fn model(mut self, value: ReplayConversationItemRequestModel) -> Self {
+        self.model = Some(value);
+        self
+    }
+
     pub fn system_prompt(mut self, value: impl Into<String>) -> Self {
         self.system_prompt = Some(value.into());
         self
@@ -37,11 +46,10 @@ impl ReplayConversationItemRequestBuilder {
     }
 
     /// Consumes the builder and constructs a [`ReplayConversationItemRequest`].
-    /// This method will fail if any of the following fields are not set:
-    /// - [`system_prompt`](ReplayConversationItemRequestBuilder::system_prompt)
     pub fn build(self) -> Result<ReplayConversationItemRequest, BuildError> {
         Ok(ReplayConversationItemRequest {
-            system_prompt: self.system_prompt.ok_or_else(|| BuildError::missing_field("system_prompt"))?,
+            model: self.model,
+            system_prompt: self.system_prompt,
             num_responses: self.num_responses,
         })
     }

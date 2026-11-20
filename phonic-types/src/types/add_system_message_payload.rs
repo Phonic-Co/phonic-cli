@@ -5,7 +5,7 @@ use super::*;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct AddSystemMessagePayload {
     pub r#type: String,
-    /// New system message
+    /// System message to add to the conversation context
     #[serde(default)]
     pub system_message: String,
 }
