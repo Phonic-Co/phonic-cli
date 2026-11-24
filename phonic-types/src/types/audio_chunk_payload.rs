@@ -5,10 +5,10 @@ use super::*;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct AudioChunkPayload {
     pub r#type: String,
-    /// Base64-encoded audio data (Int16Array for PCM, Uint8Array for mulaw)
+    /// Base64-encoded audio data (Int16Array for PCM, Uint8Array for mulaw). Each chunk may contain at most 40 ms of audio — longer chunks are rejected with an error. Batch ~20 ms frames for headroom.
     #[serde(default)]
     pub audio: String,
-    /// ISO 8601 timestamp (required for first chunk only)
+    /// Optional ISO 8601 UTC timestamp. Accepted for backwards compatibility but ignored - the server always uses the time it received the chunk.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     #[serde(with = "crate::core::flexible_datetime::offset::option")]

@@ -5,7 +5,7 @@ use super::*;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AudioChunkResponsePayload {
     pub r#type: String,
-    /// Base64-encoded AI audio data
+    /// Base64-encoded AI audio data. Empty when the conversation's `output_modality` is `"text"`.
     #[serde(default)]
     pub audio: String,
     /// Text corresponding to audio chunk
