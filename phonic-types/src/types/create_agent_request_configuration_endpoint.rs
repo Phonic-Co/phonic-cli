@@ -5,7 +5,7 @@ use super::*;
 /// When not `null`, at the beginning of the conversation the agent will make a POST request to this endpoint to get configuration options.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct CreateAgentRequestConfigurationEndpoint {
-    /// URL to call
+    /// URL to call. Must be a publicly routable HTTPS URL without embedded credentials.
     #[serde(default)]
     pub url: String,
     /// Object of key-value pairs.
